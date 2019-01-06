@@ -1,0 +1,30 @@
+Torsion
+===================
+
+manual
+-------------------------
+
+.. automodule:: ota.torsion.manual
+    :members:
+    :undoc-members:
+
+phase
+------------------------
+
+.. automodule:: ota.torsion.phase
+    :members:
+    :undoc-members:
+
+xcorr1d
+--------------------------
+
+.. automodule:: ota.torsion.xcorr1d
+    :members:
+    :undoc-members:
+
+xcorr2d
+--------------------------
+
+.. automodule:: ota.torsion.xcorr2d
+    :members:
+    :undoc-members:

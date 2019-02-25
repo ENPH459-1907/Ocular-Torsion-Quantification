@@ -186,9 +186,12 @@ def pupil_obstruct(eyelid_mat, contour):
 
     Returns
     ------------------------
-    intersect : boolean
+    intersect : 0 or 1 or None
         If true, eyelid intersects pupil. False otherwise.
     """
+    # If things are None, abort mission
+    if eyelid_mat is None or contour is None:
+        return None
 
     # Find locations where eyelid exists
     indices_zero = np.nonzero(eyelid_mat == 0)
@@ -205,6 +208,6 @@ def pupil_obstruct(eyelid_mat, contour):
     # Find the intersection between pupil contour and eyelid locations (intersection of 4 pixels)
     intersection = np.array([x for x in contour and eyelid_locs])
     if len(intersection) == 0:
-        return False
+        return 0
     #print(intersection.size)
-    return True
+    return 1

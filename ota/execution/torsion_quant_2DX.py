@@ -18,6 +18,7 @@ def quantify_torsion(
     reference_frame,
     end_frame,
     pupil_list,
+    blink_list,
     threshold,
     WINDOW_THETA = None,
     SEGMENT_THETA = None,
@@ -65,6 +66,13 @@ def quantify_torsion(
             dictionary of pupil objects
             key: (int) video frame
             value: pupil object
+
+        blink_list:
+            dictionary of whether or not a frame captures a blink
+            key: (int) video frame
+            value: 1 - blink
+                   0 - no blink
+                   None - None
 
         WINDOW_THETA:
             Integer
@@ -159,8 +167,8 @@ def quantify_torsion(
     # find torsion between start_frame+1:last_frame
     for i, frame in tqdm(enumerate(video[start_frame:end_frame])):
         frame_loc = i + start_frame
-        # check if a pupil exists
-        if not pupil_list[frame_loc]:
+        # check if a pupil exists, or if there is a blink
+        if not pupil_list[frame_loc] or blink_list[frame_loc] == 1:
             # if there is no pupil, torsion cannot be calculated
             torsion[frame_loc] = None
             torsion_derivative[frame_loc] = None
@@ -177,7 +185,8 @@ def quantify_torsion(
             if frame_loc != start_frame :
                 if deg is None or torsion[frame_loc-1] is None:
                     torsion_derivative[frame_loc] = None
-                torsion_derivative[frame_loc] = deg - torsion[frame_loc-1]
+                else:
+                    torsion_derivative[frame_loc] = deg - torsion[frame_loc-1]
             else:
                 torsion_derivative[frame_loc] = None
 

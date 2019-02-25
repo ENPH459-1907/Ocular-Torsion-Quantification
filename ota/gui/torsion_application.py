@@ -78,6 +78,7 @@ class OcularTorsionApplication(tk.Tk):
 
         self.pupil_list = None
         self.eyelid_list = None
+        self.blink_list = None
         self.pupil_threshold = tk.IntVar()
         self.data = []
 
@@ -128,8 +129,9 @@ class OcularTorsionApplication(tk.Tk):
         # Determine if the user wants to run 2D correlation on the whole iris
         if measure_state.Fulliris.get():
             # Set the transform mode and quantify torsion
+            # TODO: Pass the blinks list in here
             transform_mode = 'full'
-            torsion, torsion_derivative = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode, self.video, self.start_frame.get(), self.reference_frame.get(), self.end_frame.get(), self.pupil_list, self.pupil_threshold.get(), upper_iris = upper_iris, lower_iris = lower_iris)
+            torsion, torsion_derivative = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode, self.video, self.start_frame.get(), self.reference_frame.get(), self.end_frame.get(), self.pupil_list, self.blink_list, self.pupil_threshold.get(), upper_iris = upper_iris, lower_iris = lower_iris)
             # Construct metadata
             metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status, "radial_thickness": measure_state.radial_thickness.get(), "video_path": self.video_path.get(),"video_fps": self.video.fps}
@@ -171,6 +173,7 @@ class OcularTorsionApplication(tk.Tk):
                                                    self.reference_frame.get(),
                                                    self.end_frame.get(),
                                                    self.pupil_list,
+                                                   self.blink_list,
                                                    self.pupil_threshold.get(),
                                                    WINDOW_THETA = measure_state.window_theta.get(),
                                                    SEGMENT_THETA = measure_state.segment_theta.get(),
@@ -339,7 +342,29 @@ class OcularTorsionApplication(tk.Tk):
                     try:
                         self.eyelid_list[frame_loc] = eyelid.detect_eyelid(frame, self.pupil_list[frame_loc])
                     except:
-                        print('RIP')
+                        self.eyelid_list[frame_loc] = None
+                        print('RIP') # LOL RIP indeed
+
+    def identify_blinks(self):
+        '''
+        Identifies the blinks.
+        If it is a blink, insert 1. If not blink, insert 0. Else, None.
+        '''
+        if self.pupil_list and self.eyelid_list:
+            self.blink_list = {}
+            for i, frame in tqdm(enumerate(self.video[self.start_frame.get():self.end_frame.get()])):
+                frame_loc = i + self.start_frame.get()
+                # check if a pupil exists
+                if not self.pupil_list[frame_loc]:
+                    self.blink_list[frame_loc] = None
+                else:
+                    try:
+                        self.blink_list[frame_loc] = eyelid.pupil_obstruct(self.eyelid_list[frame_loc], self.pupil_list[frame_loc].contour)
+                    except:
+                        self.blink_list[frame_loc] = None
+                        print("double RIP")
+            print(self.blink_list)
+
         
 class StartPage(tk.Frame):
     '''
@@ -410,6 +435,8 @@ class StartPage(tk.Frame):
         scroll_eyelids_button = tk.Button(self, text="Preview Eyelids", command=lambda: controller.scroll_eyelids())
         scroll_eyelids_button.grid(row=9,column=1)
 
+        identify_blinks_button = tk.Button(self, text="Identify Blinks", command=lambda: controller.identify_blinks())
+        identify_blinks_button.grid(row=10,column=0,sticky=tk.W)
 
 class MeasureTorsion(tk.Frame):
     '''

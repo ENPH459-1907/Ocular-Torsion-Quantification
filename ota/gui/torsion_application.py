@@ -23,8 +23,11 @@ from ota.gui import frame_scroll as scroll
 from ota.video import video as vid
 from ota.execution import pupil_locate as pl
 from ota.execution import torsion_quant_2DX as tq2dx
+from ota.eyelid import eyelid
 from ota.data import data as dat
 from ota.iris import iris, eyelid_removal
+
+from tqdm import tqdm
 
 
 LARGE_FONT= ("Verdana", 18)
@@ -42,6 +45,9 @@ class OcularTorsionApplication(tk.Tk):
         pupil_list: dictionary of pupil objects
                     key: (int) video frame
                     value: pupil object
+        eyelid_list: dictionary of eyelid objects
+                     key: (int) video frame
+                     value: eyelid object
         torsion: a list that holds iris rotations results
         frame: dictionary that holds the pages of the GUI
                key: (str) name of the frame
@@ -56,8 +62,8 @@ class OcularTorsionApplication(tk.Tk):
         tk.Tk.__init__(self, *args, **kwargs)
         container = tk.Frame(self)
         container.pack(side="top", fill="both", expand = True)
-        container.grid_rowconfigure(10, weight=1)
-        container.grid_columnconfigure(10, weight=1)
+        container.grid_rowconfigure(11, weight=1)
+        container.grid_columnconfigure(11, weight=1)
 
         # Values that are common to all torsion methods
         self.video_path = tk.StringVar()
@@ -70,6 +76,7 @@ class OcularTorsionApplication(tk.Tk):
         self.save_path = tk.StringVar()
 
         self.pupil_list = None
+        self.eyelid_list = None
         self.pupil_threshold = tk.IntVar()
         self.data = []
 
@@ -177,7 +184,6 @@ class OcularTorsionApplication(tk.Tk):
                 data.set(torsion = torsion_data, start_frame = self.start_frame.get(), pupil_list = self.pupil_list, metadata = metadata_dict)
                 self.data.append(data)
 
-
     def show_frame(self, cont):
         '''
         Display a frame.
@@ -227,6 +233,13 @@ class OcularTorsionApplication(tk.Tk):
         Scroll through video frames.
         '''
         scroll.frame_scroll(self.video)
+
+    def scroll_eyelids(self):
+        '''
+        Scroll through video frames while overlaying the eyelid.
+        '''
+        if self.eyelid_list:
+            scroll.eyelid_scroll(self.video, self.eyelid_list)
 
     def scroll_pupil(self):
         '''
@@ -281,7 +294,23 @@ class OcularTorsionApplication(tk.Tk):
         '''
         self.pupil_list = pl.construct_pupil_list(self.video, self.start_frame.get(), self.end_frame.get(), self.pupil_threshold.get())
 
-
+    def identify_eyelids(self):
+        '''
+        Identifies the eyelids.
+        '''
+        if self.pupil_list:
+            self.eyelid_list = {}
+            for i, frame in tqdm(enumerate(self.video[self.start_frame.get():self.end_frame.get()])):
+                frame_loc = i + self.start_frame.get()
+                # check if a pupil exists
+                if not self.pupil_list[frame_loc]:
+                    self.eyelid_list[frame_loc] = None
+                else:
+                    try:
+                        self.eyelid_list[frame_loc] = eyelid.detect_eyelid(frame, self.pupil_list[frame_loc])
+                    except:
+                        print('RIP')
+        
 class StartPage(tk.Frame):
     '''
     Main menu of the torsion application. Allows users to set the video path, set the save path, preview the video and select a torsion quantification
@@ -344,6 +373,12 @@ class StartPage(tk.Frame):
 
         pupil_scroll_button = tk.Button(self, text="Preview Pupil Locations", command=lambda: controller.scroll_pupil())
         pupil_scroll_button.grid(row=8,column=1)
+
+        identify_eyelids_button = tk.Button(self, text="Identify Eyelids", command=lambda: controller.identify_eyelids())
+        identify_eyelids_button.grid(row=9,column=0)
+
+        scroll_eyelids_button = tk.Button(self, text="Preview Eyelids", command=lambda: controller.scroll_eyelids())
+        scroll_eyelids_button.grid(row=9,column=1)
 
 
 class MeasureTorsion(tk.Frame):

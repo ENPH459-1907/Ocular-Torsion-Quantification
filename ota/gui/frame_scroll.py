@@ -4,6 +4,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
+from matplotlib.patches import Ellipse
 from matplotlib.patches import Arrow
 from matplotlib.patches import Wedge
 
@@ -44,6 +45,37 @@ class FrameTracker(object):
         self.ax.set_xlabel('Frame %s' % self.ind)
         self.im.axes.figure.canvas.draw()
 
+class EyelidTracker(FrameTracker):
+    """
+    Object that displays a video frame with the located eyelid overlayed. Class used by eyelid_scroll method.
+
+    Parameters
+    ------------------------
+    ax : object containing elements of a figure
+        Used to set window title and axis labels
+
+    video : array_like
+        series of video frames
+
+    eyelid : dictionary
+        dictionary of pupils where the key is the frame index and the value is the frame with the eyelid removed.
+        Does not need to include all video frames.
+    """
+    def __init__(self, ax, video, eyelid_list):
+        FrameTracker.__init__(self, ax, video)
+        self.eyelid_list = eyelid_list
+
+    def update(self):
+        display_img = self.video[self.ind]
+        if self.ind in self.eyelid_list:
+            self.eyelid_at_ind = self.eyelid_list[self.ind]
+            if self.eyelid_at_ind is not None:
+                display_img = self.eyelid_at_ind
+        self.im.set_data(display_img)
+        self.ax.set_xlabel('Frame %s' % self.ind)
+        self.im.axes.figure.canvas.draw()
+
+
 class PupilTracker(FrameTracker):
     """
     Object that displays a video frame with the located pupil overlayed. Class used by pupil_scroll method.
@@ -76,7 +108,8 @@ class PupilTracker(FrameTracker):
         if self.ind in self.pupil_list:
             self.pupil_at_ind = self.pupil_list[self.ind]
             if self.pupil_at_ind:
-                self.pupil_circle = Circle((self.pupil_at_ind.center_col,self.pupil_at_ind.center_row),self.pupil_at_ind.radius,fill=False,ec=[1,0,0])
+                #self.pupil_circle = Circle((self.pupil_at_ind.center_col,self.pupil_at_ind.center_row),self.pupil_at_ind.radius,fill=False,ec=[1,0,0])
+                self.pupil_circle = Ellipse((self.pupil_at_ind.center_col,self.pupil_at_ind.center_row), self.pupil_at_ind.width, self.pupil_at_ind.height,fill=False,ec=[1,0,0]) 
                 self.pupil_center = Circle((self.pupil_at_ind.center_col,self.pupil_at_ind.center_row),int(0.1*self.pupil_at_ind.radius),fill=True,ec=[1,0,0], fc=[1,0,0])
                 self.pupil_patch = self.ax.add_patch(self.pupil_circle)
                 self.center_patch = self.ax.add_patch(self.pupil_center)
@@ -230,6 +263,25 @@ def frame_scroll(video):
     tracker = FrameTracker(ax, video)
     fig.canvas.mpl_connect('key_press_event', tracker.on_key)
     plt.show()
+
+def eyelid_scroll(video, eyelid_list):
+    '''
+    Overlays eyelid during frame scroll
+
+    Parameters:
+    ------------------------
+                video : array_like
+                        video to scroll through
+
+                eyelid_list : dictionary
+                        dictionary of pupils where the key is the frame index and the value is the pupil.
+                        Does not need to include all video frames.
+    '''
+    fig, ax = plt.subplots(1, 1)
+    tracker = EyelidTracker(ax, video, eyelid_list)
+    fig.canvas.mpl_connect('key_press_event', tracker.on_key)
+    plt.show()
+
 
 def pupil_scroll(video,pupil_list):
     '''

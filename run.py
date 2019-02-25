@@ -1,8 +1,3 @@
-import sys, os, datetime, time
-import numpy as np
-#sys.path.append(os.path.abspath(os.path.join(os.path.dirname('.'), os.path.pardir)))
-
-
 from ota.gui import torsion_application
 from ota.data.data import Data
 from ota.torsion.xcorr2d import xcorr2d
@@ -249,5 +244,4 @@ def interpolation_subset_method(video_path, verborose=True, **kw):
     obj.set(data['torsion'], start_frame=start_frame, pupil_list=data['pupil_list'], metadata=metadata)
     obj.save()
 
-    if verborose:
-        print('Saving {} {} results.')
+torsion_application.run()

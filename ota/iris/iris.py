@@ -2,7 +2,9 @@ import numpy as np
 
 import scipy as sp
 from scipy import ndimage
+import matplotlib.pyplot as plt
 from math import *
+from cv2 import remap
 
 # TODO instead of ret_cartesian use mode='polar' or cartesian
 # https://github.com/scipy/scipy/blob/v0.19.1/scipy/signal/signaltools.py#L111-L269
@@ -14,7 +16,8 @@ def iris_transform(
     theta_window = (-90, 270),
     theta_resolution=1,
     r_resolution=1,
-    mode='polar'
+    mode='polar',
+    reference_pupil=None,
     ):
     '''
     Transforms the iris in the given frame into polar representation where the vertical
@@ -31,6 +34,7 @@ def iris_transform(
         r_resolution - sampling interval for radius. Default is 1 pixel length
         ret_cartesian - boolean value which allows the return of only the iris in
                         cartesian coordinates. By default this is set to false
+        reference_pupil - the reference pupil used for geometric correction
 
     Outputs:
         polar_iris - opencv image (numpy array) of extracted iris in polar coordinates
@@ -64,16 +68,45 @@ def iris_transform(
         n_theta = int((theta_window[1] - theta_window[0])/theta_resolution)
 
         coordinates = np.mgrid[min_radius:max_radius:n_radius * 1j, theta_window[0]:theta_window[1]:n_theta * 1j]
-        r = coordinates[0,:]
-        angle = np.radians(coordinates[1,:])
+        radii = coordinates[0,:]
+        angles = np.radians(coordinates[1,:])
 
-        # Using scipy's map_coordinates(), we map the input array into polar
-        # space centered about the detected pupil center location.
-        polar_iris = ndimage.interpolation.map_coordinates(frame,
-                                                (-1*r*sp.sin(angle) + pupil.center_row,
-                                                r*sp.cos(angle) + pupil.center_col),
-                                                order=3, mode='constant')
-        return polar_iris
+        if reference_pupil == None or pupil.width >= reference_pupil.width or pupil.height >= reference_pupil.height:
+            # Using scipy's map_coordinates(), we map the input array into polar
+            # space centered about the detected pupil center location.
+            polar_iris = ndimage.interpolation.map_coordinates(frame,
+                                                    (-1*radii*sp.sin(angles) + pupil.center_row,
+                                                    radii*sp.cos(angles) + pupil.center_col),
+                                                    order=3, mode='constant')
+
+            return polar_iris
+        else:
+            map_x = {}
+            map_y = {}
+
+            for r in range(min_radius,max_radius,r_resolution):
+                for a in range(theta_window[0],theta_window[1],theta_resolution):
+                    print(pupil.center_row, pupil.center_col)
+                    print(reference_pupil.center_row, reference_pupil.center_col)
+                    h_pupil_movement = pupil.center_row - reference_pupil.center_row
+                    v_pupil_movement = pupil.center_col - reference_pupil.center_col
+                    h_dist_from_center = r * sp.sin(a)
+                    v_dist_from_center = r * sp.cos(a)
+                    print(h_pupil_movement)
+                    print(pupil.width/reference_pupil.width)
+                    print((pupil.width/reference_pupil.width)**2)
+                    print(sqrt(1 - (pupil.width/reference_pupil.width)**2))
+                    r_eye = h_pupil_movement / sqrt(1 - (pupil.width/reference_pupil.width)**2)
+                    print(r_eye, v_pupil_movement * reference_pupil.height / sqrt(reference_pupil.height**2 - pupil.height**2))
+                    map_x[(a, r)] = reference_pupil.center_row + h_pupil_movement * sqrt(1 - (h_dist_from_center/r_eye)**2) + sqrt(1-(h_pupil_movement/r_eye)**2) * h_dist_from_center
+                    map_y[(a, r)] = reference_pupil.center_col + v_pupil_movement * sqrt(1 - (v_dist_from_center/r_eye)**2) + sqrt(1-(v_pupil_movement/r_eye)**2) * v_dist_from_center
+
+            geometric_corrected_iris = cv.remap(frame, map_x, map_y)
+
+            plt.imshow(geometric_corrected_iris)
+            plt.show()
+
+            return geometric_corrected_iris
 
     else:
         # TODO throw exception

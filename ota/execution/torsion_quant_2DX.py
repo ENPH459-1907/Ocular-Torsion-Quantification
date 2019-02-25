@@ -95,6 +95,10 @@ def quantify_torsion(
             Dictionary
             key = frame number
             value = rotation from reference frame
+        torsion_deriative:
+            Dictionary
+            key = frame number
+            value = rotation from previous frame
     '''
 
     upsample_factor = 1
@@ -114,7 +118,7 @@ def quantify_torsion(
         if upper_iris and lower_iris:
             noise_replace = True
         start = 0
-        reference_bounds = (0,360)
+        reference_bounds = (0,360) # what are these? 360 degrees?
         comparison_bounds = (0,360)
 
     # get the reference window from the first frame of the video
@@ -148,8 +152,10 @@ def quantify_torsion(
     if transform_mode == 'full':
         # extend iris window
         first_window = eyelid_removal.iris_extension(first_window, theta_resolution = upsample_factor, lower_theta = -pre.MAX_ANGLE, upper_theta=pre.MAX_ANGLE)
+        # TODO: Add a button to show iris segments
 
     torsion = {}
+    torsion_derivative = {}
     # find torsion between start_frame+1:last_frame
     for i, frame in tqdm(enumerate(video[start_frame:end_frame])):
         frame_loc = i + start_frame
@@ -157,6 +163,7 @@ def quantify_torsion(
         if not pupil_list[frame_loc]:
             # if there is no pupil, torsion cannot be calculated
             torsion[frame_loc] = None
+            torsion_derivative[frame_loc] = None
             print('WARNING: No pupil in frame: %d \n Torsion cannot be calculated' % (frame_loc))
         else:
             # unwrap the iris (convert into polar)
@@ -166,7 +173,15 @@ def quantify_torsion(
             # save the torsion
             torsion[frame_loc] = deg
 
-    return torsion
+            # Get the change in angle compared to previous frame
+            if frame_loc != start_frame :
+                if deg is None or torsion[frame_loc-1] is None:
+                    torsion_derivative[frame_loc] = None
+                torsion_derivative[frame_loc] = deg - torsion[frame_loc-1]
+            else:
+                torsion_derivative[frame_loc] = None
+
+    return torsion, torsion_derivative
 
 
 

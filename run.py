@@ -147,6 +147,7 @@ def corr2d(video_path, verborose=True, **kw):
         results['upsample']['subset'].append(t_upsample_subset)
 
         if verborose:
+            print('Elapsed Time: %.3f' % round(time.time() - start_time,2))
             print('Elapsed Time: {}s'.format(round(time.time() - start_time,2)), sep=' ', end='\r', flush=True)
 
     if verborose:

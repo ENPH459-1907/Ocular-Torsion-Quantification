@@ -16,6 +16,7 @@ import time
 import datetime
 from plotly.offline import plot
 import plotly.graph_objs as go
+import plotly.tools as tools
 
 # OTA tools
 from ota.gui import coord_click as clk
@@ -74,6 +75,7 @@ class OcularTorsionApplication(tk.Tk):
         self.data = []
 
         self.torsion = []
+        self.torsion_derivative = []
 
         # Dictionary to store all the frames (pages) in the UI
         self.frames = {}
@@ -120,7 +122,7 @@ class OcularTorsionApplication(tk.Tk):
         if measure_state.Fulliris.get():
             # Set the transform mode and quantify torsion
             transform_mode = 'full'
-            torsion = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode, self.video, self.start_frame.get(), self.reference_frame.get(), self.end_frame.get(), self.pupil_list, self.pupil_threshold.get(), upper_iris = upper_iris, lower_iris = lower_iris)
+            torsion, torsion_derivative = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode, self.video, self.start_frame.get(), self.reference_frame.get(), self.end_frame.get(), self.pupil_list, self.pupil_threshold.get(), upper_iris = upper_iris, lower_iris = lower_iris)
             # Construct metadata
             metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status, "radial_thickness": measure_state.radial_thickness.get(), "video_path": self.video_path.get(),"video_fps": self.video.fps}
@@ -136,6 +138,7 @@ class OcularTorsionApplication(tk.Tk):
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status}
             # Append torsion to the list as a tuple with the first element the results, second element as the metadata, third element as the legend entry
             self.torsion.append((torsion, metadata, legend_entry))
+            self.torsion_derivative.append((torsion_derivative, metadata, legend_entry))
 
             # Initialize data object and append it to session list
             data = dat.Data(name=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),path=self.save_path.get())
@@ -152,7 +155,19 @@ class OcularTorsionApplication(tk.Tk):
             feature_coordinates = measure_state.feature_coordinates
             # Run the algorithm for each set of recorded feature coordinates
             for i, coords in enumerate(feature_coordinates):
-                torsion_i = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode, self.video, self.start_frame.get(), self.reference_frame.get(), self.end_frame.get(), self.pupil_list, self.pupil_threshold.get(), WINDOW_THETA = measure_state.window_theta.get(), SEGMENT_THETA = measure_state.segment_theta.get(),feature_coords = coords)
+                torsion_i, torsion_deriative_1= tq2dx.quantify_torsion(RADIUS,
+                                                   RESOLUTION,
+                                                   torsion_mode,
+                                                   transform_mode,
+                                                   self.video,
+                                                   self.start_frame.get(),
+                                                   self.reference_frame.get(),
+                                                   self.end_frame.get(),
+                                                   self.pupil_list,
+                                                   self.pupil_threshold.get(),
+                                                   WINDOW_THETA = measure_state.window_theta.get(),
+                                                   SEGMENT_THETA = measure_state.segment_theta.get(),
+                                                   feature_coords = coords)
                 # Construct metadata
                 metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, Window Theta (deg): %(window_theta)d, Segment Theta (deg): %(segment_theta)d, Radial Thickness (pix): %(radial_thickness)d, Feature Number: %(feature_num)d, Video Path: %(video_path)s, Video FPS: %(video_fps)d' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode,"window_theta": measure_state.window_theta.get(),"segment_theta": measure_state.segment_theta.get(),"radial_thickness": measure_state.radial_thickness.get(),"feature_num": (i+1),"video_path": self.video_path.get(),"video_fps": self.video.fps}
@@ -170,6 +185,7 @@ class OcularTorsionApplication(tk.Tk):
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "feature_num": (i+1)}
                 # Append torsion to the list as a tuple with the first element the results, second element as the metadata, third element as the legend entry
                 self.torsion.append((torsion_i, metadata_dict, legend_entry))
+                self.torsion_derivative.append((torsion_derivative_i, metadata_dict, legend_entry))
 
                 # Initialize data object and append it to session list
                 data = dat.Data(name=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),path=self.save_path.get())
@@ -262,18 +278,32 @@ class OcularTorsionApplication(tk.Tk):
         '''
         plots all series within the torsion list in a plotly window. The legend shows all the legend entry relating to each series.
         '''
-        data = []
+        # Set up subplots
+        fig = tools.make_subplots(rows=2,
+                                  cols=1,
+                                  subplot_titles=('Rotation Angle Compared to Reference Frame', 'Rotation Angle Compared to Previous Frame'))
+
+        # Plot rotation from reference to reference frame
         for (result, metadata, legend_entry) in self.torsion:
 
             x_i, y_i = zip(*result.items())
             trace = go.Scatter(x=x_i, y=y_i, name=legend_entry)
-            data.append(trace)
+            fig.append_trace(trace, 1, 1)
 
-        layout = go.Layout(title='Iris Rotation History',
-                           xaxis=dict(title='Frame Number'),
-                           yaxis=dict(title='Rotation (deg)'))
+        # Plot rotation from reference to previous frame
+        for (result, metadata, legend_entry) in self.torsion_derivative:
 
-        plot({"data":data,"layout":layout})
+            x_i, y_i = zip(*result.items())
+            trace = go.Scatter(x=x_i, y=y_i, name=legend_entry)
+            fig.append_trace(trace, 2, 1)
+
+        # Customize titles
+        fig['layout']['xaxis1'].update(title='Frame Number')
+        fig['layout']['xaxis2'].update(title='Frame Number')
+        fig['layout']['yaxis1'].update(title='Rotation (deg)')
+        fig['layout']['yaxis2'].update(title='Rotation (deg)')
+        fig['layout'].update(title='Iris Rotation History')
+        plot(fig)
 
     def construct_pupil_list(self, measure_torsion_button):
         '''
@@ -549,6 +579,13 @@ class MeasureTorsion(tk.Frame):
 
         self.save_button = tk.Button(self, text='Save to CSV', command=lambda: controller.save_results())
         self.save_button.grid(row=14,column=1, sticky=tk.W)
+
+        #self.save_button = tk.Button(self, text='Save to CSV', command=lambda: controller.save_results())
+        #self.save_button.grid(row=14,column=1, sticky=tk.W)
+
+        #pupil_scroll_button = tk.Button(self, text="Preview Pupil Locations", command=lambda: controller.scroll_pupil())
+        #pupil_scroll_button.grid(row=8,column=1)
+
 
         measurement_options_label = tk.Label(self, text="Animate and Plot", font=LARGE_FONT)
         measurement_options_label.grid(row=15,column=0, sticky=tk.W)

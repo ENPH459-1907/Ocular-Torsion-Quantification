@@ -27,6 +27,7 @@ class Data():
         self.metadata = None
         self.start_frame = None
         self.torsion = None
+        self.torsion_derivative = None
         self.pupil_list = None
 
         # If save path is not specified, set it to the current directory
@@ -56,6 +57,7 @@ class Data():
         self.metadata = metadata
         self.start_frame = start_frame
         self.torsion = torsion
+        self.torsion_derivative = np.insert(np.diff(self.torsion), 0, np.nan)
         self.frame_index_list = frame_index_list
         self.pupil_list = pupil_list
 
@@ -110,6 +112,7 @@ class Data():
             csvwriter.writerow(['Frame Index',
                                 'Frame Time',
                                 'Torsion [deg]',
+                                'Torsion Derivative [deg]',
                                 'Pupil Center Column',
                                 'Pupil Center Row',
                                 'Pupil Radius [pixels]'])
@@ -140,10 +143,19 @@ class Data():
                     pupil_center_row = temp_pupil.center_row
                     pupil_radius = temp_pupil.radius
 
+                # Find the change in angle
+                # ie cross correlation with respect to previous frame
+                if i == 0:
+                    delta_deg = 0
+                else:
+                    delta_deg = deg - self.torsion[i]
+                print(delta_deg)
+
                 # Write the results
                 csvwriter.writerow([frame,
                                     time,
                                     repr(deg),
+                                    repr(delta_deg),
                                     pupil_center_col,
                                     pupil_center_row,
                                     pupil_radius])

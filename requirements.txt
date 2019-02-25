@@ -2,7 +2,7 @@ appnope==0.1.0
 bleach==2.1.1
 certifi==2017.11.5
 chardet==3.0.4
-cx-Freeze==5.1.1
+cx_Freeze==5.1.1
 cycler==0.10.0
 decorator==4.1.2
 dill==0.2.7.1

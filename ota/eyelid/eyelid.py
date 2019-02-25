@@ -181,3 +181,43 @@ def detect_eyelid(image, pupil, **kw):
     # https://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html (Search for floodFill)
 
     return eyelid_mat
+
+
+def pupil_obstruct(eyelid_mat, contour):
+    """
+    Detects if the upper and lower eyelids intersect the pupil
+
+    Parameters
+    ------------------------
+    eyelid_mat : array_like
+        An array with the same shape as image, containing 0s where there is eyelid has been detected and 1s elsewhere.
+    contour: array_like
+        Vector type object containing a list of points contained in the contour of the pupil.
+            0-index of point corresponds to column index
+            1-index of point corresponds to row index
+
+    Returns
+    ------------------------
+    intersect : boolean
+        If true, eyelid intersects pupil. False otherwise.
+    """
+
+    # Find locations where eyelid exists
+    indices_zero = np.nonzero(eyelid_mat == 0)
+
+    # If there is no eyelid, just abort
+    if indices_zero[0].size == 0 or indices_zero[1].size == 0:
+        return True
+    eyelid_locs = [(indices_zero[0][i], indices_zero[1][i]) for i in range(0, len(indices_zero))]
+
+    # Get the contour into proper form: set of tuples (row, col)
+    contour = np.squeeze(contour)
+    contour = set([tuple(x) for x in contour])
+
+    # Find the intersection between pupil contour and eyelid locations (intersection of 4 pixels)
+    intersection = np.array([x for x in contour and eyelid_locs])
+    if len(intersection) == 0:
+        return False
+    #print(intersection.size)
+    return True
+

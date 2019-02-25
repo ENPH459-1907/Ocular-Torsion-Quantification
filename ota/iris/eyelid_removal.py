@@ -2,7 +2,7 @@ import numpy as np
 
 def noise_replace(iris, upper_occlusion_theta, lower_occlusion_theta):
     '''
-    Replaces portions of the iris with noise.
+    Replaces portions of the iris with continuous uniform noise.
 
     Input:
         iris - numpy array of pixel intensities of transformed iris.

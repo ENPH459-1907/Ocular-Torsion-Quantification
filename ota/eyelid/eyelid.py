@@ -220,4 +220,3 @@ def pupil_obstruct(eyelid_mat, contour):
         return False
     #print(intersection.size)
     return True
-

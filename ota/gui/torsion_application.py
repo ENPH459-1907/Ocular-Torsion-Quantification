@@ -111,10 +111,13 @@ class OcularTorsionApplication(tk.Tk):
         RESOLUTION = measure_state.resolution.get()
 
         # Determine whether interpolation or upsampling should be used
+        # Default to interpolation
         if measure_state.Interpolation.get():
             torsion_mode = 'interp'
         elif measure_state.Upsampling.get():
             torsion_mode = 'upsample'
+        else:
+            torsion_mode = 'interp'
 
         # Determine if the user desires locations of the reference frame to be replaced by noise
         if measure_state.NoiseReplacement.get():
@@ -126,12 +129,87 @@ class OcularTorsionApplication(tk.Tk):
             upper_iris = None
             lower_iris = None
 
+        if measure_state.AlternateFullSubset.get():
+            transform_mode = 'alternate'
+            feature_coordinates = measure_state.feature_coordinates
+            window_theta = measure_state.window_theta.get()
+            segment_theta = measure_state.segment_theta.get()
+
+            # TODO: pass the segment removal
+            torsion, torsion_derivative = tq2dx.quantify_torsion(RADIUS,
+                                                                 RESOLUTION,
+                                                                 torsion_mode,
+                                                                 transform_mode,
+                                                                 self.video,
+                                                                 self.start_frame.get(),
+                                                                 self.reference_frame.get(),
+                                                                 self.end_frame.get(),
+                                                                 self.pupil_list,
+                                                                 self.blink_list,
+                                                                 self.pupil_threshold.get(),
+                                                                 measure_state.AlternateFullSubset.get(),
+                                                                 upper_iris=upper_iris,
+                                                                 lower_iris=lower_iris,
+                                                                 WINDOW_THETA=window_theta,
+                                                                 SEGMENT_THETA=segment_theta,
+                                                                 feature_coords=feature_coordinates[0])
+            # Construct metadata
+            metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
+                       {"torsion_mode": torsion_mode, "transform_mode": transform_mode,
+                        "replace_status": replace_status, "radial_thickness": measure_state.radial_thickness.get(),
+                        "video_path": self.video_path.get(), "video_fps": self.video.fps}
+            metadata_dict = {'Mode': torsion_mode,
+                             'Iris': transform_mode,
+                             'Replace': replace_status,
+                             'Thickness': measure_state.radial_thickness.get(),
+                             'Video': self.video_path.get(),
+                             'VIDEO_FPS': self.video.fps,
+                             'REFERENCE_FRAME': self.reference_frame.get()}
+            # Construct legend entry, which is a subset of the metadata
+            legend_entry = 'Mode-%(torsion_mode)s_Iris-%(transform_mode)s_%(replace_status)s' % \
+                           {"torsion_mode": torsion_mode, "transform_mode": transform_mode,
+                            "replace_status": replace_status}
+            # Append torsion to the list as a tuple with the first element the results, second element as the metadata, third element as the legend entry
+            self.torsion.append((torsion, metadata, legend_entry))
+            self.torsion_derivative.append((torsion_derivative, metadata, legend_entry))
+
+            # Initialize data object and append it to session list
+            data = dat.Data(name=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), path=self.save_path.get())
+            torsion_data = [torsion_data[1] for torsion_data in torsion.items()]
+            data.set(torsion=torsion_data, start_frame=self.start_frame.get(), pupil_list=self.pupil_list,
+                     metadata=metadata_dict)
+            self.data.append(data)
+            print('done')
+
         # Determine if the user wants to run 2D correlation on the whole iris
         if measure_state.Fulliris.get():
             # Set the transform mode and quantify torsion
             # TODO: Pass the blinks list in here
             transform_mode = 'full'
-            torsion, torsion_derivative = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode, self.video, self.start_frame.get(), self.reference_frame.get(), self.end_frame.get(), self.pupil_list, self.blink_list, self.pupil_threshold.get(), upper_iris = upper_iris, lower_iris = lower_iris)
+            print('full')
+
+            feature_coordinates = [None]
+            window_theta = None
+            segment_theta = None
+
+            # TODO: pass the segment removal
+            torsion, torsion_derivative = tq2dx.quantify_torsion(RADIUS,
+                                                                 RESOLUTION,
+                                                                 torsion_mode,
+                                                                 transform_mode,
+                                                                 self.video,
+                                                                 self.start_frame.get(),
+                                                                 self.reference_frame.get(),
+                                                                 self.end_frame.get(),
+                                                                 self.pupil_list,
+                                                                 self.blink_list,
+                                                                 self.pupil_threshold.get(),
+                                                                 measure_state.AlternateFullSubset.get(),
+                                                                 upper_iris = upper_iris,
+                                                                 lower_iris = lower_iris,
+                                                                 WINDOW_THETA = window_theta,
+                                                                 SEGMENT_THETA = segment_theta,
+                                                                 feature_coords = feature_coordinates[0])
             # Construct metadata
             metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status, "radial_thickness": measure_state.radial_thickness.get(), "video_path": self.video_path.get(),"video_fps": self.video.fps}
@@ -154,17 +232,62 @@ class OcularTorsionApplication(tk.Tk):
             torsion_data = [torsion_data[1] for torsion_data in torsion.items()]
             data.set(torsion = torsion_data, start_frame = self.start_frame.get(), pupil_list = self.pupil_list, metadata = metadata_dict)
             self.data.append(data)
+            print('done')
 
+        # TODO: RIP
+        # Determine if the user wants to run 2D correlation on subset and full iris
+        if measure_state.AlternateFullSubset.get():
+            # Extract gui state values required for the subset method
+            print('enter alternate')
+            transform_mode = 'alternate'
+            # Extract gui state values required for the subset method
+            feature_coordinates = measure_state.feature_coordinates
+            # Run algo
+            torsion, torsion_derivative = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode,
+                                                                 self.video, self.start_frame.get(),
+                                                                 self.reference_frame.get(), self.end_frame.get(),
+                                                                 self.pupil_list, self.blink_list,
+                                                                 self.pupil_threshold.get(),
+                                                                 measure_state.AlternateFullSubset.get(),
+                                                                 upper_iris=upper_iris, lower_iris=lower_iris,
+                                                                 WINDOW_THETA=measure_state.window_theta.get(),
+                                                                 SEGMENT_THETA=measure_state.segment_theta.get(),
+                                                                 feature_coords = feature_coordinates[0])
+            # Construct metadata
+            metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
+                            {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status, "radial_thickness": measure_state.radial_thickness.get(), "video_path": self.video_path.get(),"video_fps": self.video.fps}
+            metadata_dict = {'Mode': torsion_mode,
+                             'Iris': transform_mode,
+                             'Replace': replace_status,
+                             'Thickness': measure_state.radial_thickness.get(),
+                             'Video': self.video_path.get(),
+                             'VIDEO_FPS': self.video.fps,
+                             'REFERENCE_FRAME': self.reference_frame.get()}
+            # Construct legend entry, which is a subset of the metadata
+            legend_entry = 'Mode-%(torsion_mode)s_Iris-%(transform_mode)s_%(replace_status)s' % \
+                            {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status}
+            # Append torsion to the list as a tuple with the first element the results, second element as the metadata, third element as the legend entry
+            self.torsion.append((torsion, metadata, legend_entry))
+            self.torsion_derivative.append((torsion_derivative, metadata, legend_entry))
+
+            # Initialize data object and append it to session list
+            data = dat.Data(name=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),path=self.save_path.get())
+            torsion_data = [torsion_data[1] for torsion_data in torsion.items()]
+            data.set(torsion = torsion_data, start_frame = self.start_frame.get(), pupil_list = self.pupil_list, metadata = metadata_dict)
+            self.data.append(data)
+            print('done')
+            print('done alternative')
 
         # Determine if the user wants to run 2D correlation on a subset of the iris
-        elif measure_state.Subset.get():
+        if measure_state.Subset.get():
             # Set the transform mode to subset
             transform_mode = 'subset'
+            print('subset')
             # Extract gui state values required for the subset method
             feature_coordinates = measure_state.feature_coordinates
             # Run the algorithm for each set of recorded feature coordinates
             for i, coords in enumerate(feature_coordinates):
-                torsion_i, torsion_deriative_1= tq2dx.quantify_torsion(RADIUS,
+                torsion_i, torsion_derivative_i= tq2dx.quantify_torsion(RADIUS,
                                                    RESOLUTION,
                                                    torsion_mode,
                                                    transform_mode,
@@ -175,6 +298,7 @@ class OcularTorsionApplication(tk.Tk):
                                                    self.pupil_list,
                                                    self.blink_list,
                                                    self.pupil_threshold.get(),
+                                                   segment_removal=False,
                                                    WINDOW_THETA = measure_state.window_theta.get(),
                                                    SEGMENT_THETA = measure_state.segment_theta.get(),
                                                    feature_coords = coords)
@@ -202,6 +326,7 @@ class OcularTorsionApplication(tk.Tk):
                 torsion_data = [torsion_data[1] for torsion_data in torsion_i.items()]
                 data.set(torsion = torsion_data, start_frame = self.start_frame.get(), pupil_list = self.pupil_list, metadata = metadata_dict)
                 self.data.append(data)
+                print('dnoe')
 
     def show_frame(self, cont):
         '''
@@ -518,6 +643,16 @@ class MeasureTorsion(tk.Frame):
 
         self.NoiseReplacement = tk.IntVar()
 
+        # The removal method, maximizes the angular portion for torsion calculations
+        self.AlternateFullSubset = tk.IntVar()
+
+        # Iris Measurement Methods
+
+        # Run both subset and full iris
+        self.FullandSubset = tk.IntVar()
+        # Run subset and Full iris alternatively
+        self.AlternateFullSubset = tk.IntVar()
+
         # Thickness, beyond the pupil edge of both the iris segment and window.
         self.radial_thickness= tk.IntVar()
 
@@ -549,98 +684,116 @@ class MeasureTorsion(tk.Frame):
         main_button = tk.Button(self, text="Back to Main Menu", command=lambda: controller.show_frame(StartPage))
         main_button.grid(row=0,column=0, sticky=tk.W)
 
-        measurement_options_label = tk.Label(self, text="Measurement Options", font=LARGE_FONT)
+        measurement_options_label = tk.Label(self, text="Iris Measurement Options", font=LARGE_FONT)
         measurement_options_label.grid(row=1,column=0, sticky=tk.W)
 
-        interpolation_check = tk.Checkbutton(self, text="Interpolate", variable = self.Interpolation, command=lambda: [self.Upsampling.set(not(self.Interpolation.get())), self.update()])
-        interpolation_check.grid(row=2,column=0, sticky=tk.W)
-
-        upsampling_check = tk.Checkbutton(self, text="Upsample", variable = self.Upsampling, command=lambda: [self.Interpolation.set(not(self.Upsampling.get())), self.update()])
-        upsampling_check.grid(row=3,column=0, sticky=tk.W)
+        subset_check = tk.Checkbutton(self, text="Subset Iris", variable = self.Subset, command=lambda: [self.Fulliris.set(not(self.Subset.get())), self.update()])
+        subset_check.grid(row=2,column=0, sticky=tk.W)
 
         full_iris_check = tk.Checkbutton(self, text="Full Iris", variable = self.Fulliris, command=lambda: [self.Subset.set(not(self.Fulliris.get())), self.update()])
-        full_iris_check.grid(row=2,column=1, sticky=tk.W)
+        full_iris_check.grid(row=3,column=0, sticky=tk.W)
 
-        subset_check = tk.Checkbutton(self, text="Subset Iris", variable = self.Subset, command=lambda: [self.Fulliris.set(not(self.Subset.get())), self.update()])
-        subset_check.grid(row=3,column=1, sticky=tk.W)
+        noise_replacement_check = tk.Checkbutton(self, text="Both Subset and Full Iris", variable = self.FullandSubset, command=lambda: [self.update()])
+        noise_replacement_check.grid(row=2,column=1, sticky=tk.W)
+
+        noise_replacement_check = tk.Checkbutton(self, text="Alternate Subset and Full Iris", variable = self.AlternateFullSubset, command=lambda: [self.update()])
+        noise_replacement_check.grid(row=3,column=1, sticky=tk.W)
+
+
+
+        measurement_options_label = tk.Label(self, text="Measurement Options", font=LARGE_FONT)
+        measurement_options_label.grid(row=4,column=0, sticky=tk.W)
+
+        interpolation_check = tk.Checkbutton(self, text="Interpolate", variable = self.Interpolation, command=lambda: [self.Upsampling.set(not(self.Interpolation.get())), self.update()])
+        interpolation_check.grid(row=5,column=0, sticky=tk.W)
+        self.Interpolation.set('1') # Set as default
+
+        upsampling_check = tk.Checkbutton(self, text="Upsample", variable = self.Upsampling, command=lambda: [self.Interpolation.set(not(self.Upsampling.get())), self.update()])
+        upsampling_check.grid(row=6,column=0, sticky=tk.W)
+
+        #full_iris_check = tk.Checkbutton(self, text="Full Iris", variable = self.Fulliris, command=lambda: [self.Subset.set(not(self.Fulliris.get())), self.update()])
+        #full_iris_check.grid(row=5,column=1, sticky=tk.W)
+
+        #subset_check = tk.Checkbutton(self, text="Subset Iris", variable = self.Subset, command=lambda: [self.Fulliris.set(not(self.Subset.get())), self.update()])
+        #subset_check.grid(row=6,column=1, sticky=tk.W)
 
         noise_replacement_check = tk.Checkbutton(self, text="Noise Replacement", variable = self.NoiseReplacement, command=lambda: [self.update()])
-        noise_replacement_check.grid(row=2,column=2, sticky=tk.W)
+        noise_replacement_check.grid(row=5,column=1, sticky=tk.W)
 
         radial_thickness_label = tk.Label(self, text="Radial Thickness (pixels):")
-        radial_thickness_label.grid(row=4, column=0, sticky=tk.W)
+        radial_thickness_label.grid(row=7, column=0, sticky=tk.W)
 
         radial_thickness = tk.Entry(self, textvariable=self.radial_thickness)
-        radial_thickness.grid(row=4, column=1, sticky=tk.W)
+        radial_thickness.grid(row=7, column=1, sticky=tk.W)
 
         resolution_label = tk.Label(self, text="Resolution (degree):")
-        resolution_label.grid(row=5, column=0, sticky=tk.W)
+        resolution_label.grid(row=8, column=0, sticky=tk.W)
 
         resolution = tk.Entry(self, textvariable=self.resolution)
-        resolution.grid(row=5, column=1, sticky=tk.W)
+        resolution.grid(row=8, column=1, sticky=tk.W)
 
         measurement_options_label = tk.Label(self, text="Measurement Settings", font=LARGE_FONT)
-        measurement_options_label.grid(row=6,column=0, sticky=tk.W)
+        measurement_options_label.grid(row=9,column=0, sticky=tk.W)
 
         self.upper_occ_get_button = tk.Button(self, text="Select Upper Occlusion Limit", command=lambda: self.get_occlusion_coordinates(controller))
-        self.upper_occ_get_button.grid(row=7,column=0, sticky=tk.W)
+        self.upper_occ_get_button.grid(row=10,column=0, sticky=tk.W)
 
         self.upper_occ_rec_button = tk.Button(self, text="Record Upper Occlusion Limit", command=lambda: self.record_upper_occ())
-        self.upper_occ_rec_button.grid(row=7,column=1, sticky=tk.E)
+        self.upper_occ_rec_button.grid(row=10,column=1, sticky=tk.E)
 
         self.upper_set_check = tk.StringVar()
         self.upper_set_check.set('Not Set')
         upper_check_label = tk.Label(self, textvariable=self.upper_set_check)
-        upper_check_label.grid(row=7,column=2, sticky=tk.W)
+        upper_check_label.grid(row=10,column=2, sticky=tk.W)
 
         self.lower_occ_get_button = tk.Button(self, text="Select lower Occlusion Limit", command=lambda: self.get_occlusion_coordinates(controller))
-        self.lower_occ_get_button.grid(row=8,column=0, sticky=tk.W)
+        self.lower_occ_get_button.grid(row=11,column=0, sticky=tk.W)
 
         self.lower_occ_rec_button = tk.Button(self, text="Record Lower Occlusion Limit", command=lambda: self.record_lower_occ())
-        self.lower_occ_rec_button.grid(row=8,column=1, sticky=tk.E)
+        self.lower_occ_rec_button.grid(row=11,column=1, sticky=tk.E)
 
         self.lower_set_check = tk.StringVar()
         self.lower_set_check.set('Not Set')
         lower_check_label = tk.Label(self, textvariable=self.lower_set_check)
-        lower_check_label.grid(row=8,column=2, sticky=tk.W)
+        lower_check_label.grid(row=11,column=2, sticky=tk.W)
 
         segment_theta_label = tk.Label(self, text="Iris Segment Bounds (deg):")
-        segment_theta_label.grid(row=9, column=0, sticky=tk.W)
+        segment_theta_label.grid(row=12, column=0, sticky=tk.W)
 
         self.segment_theta_entry = tk.Entry(self, textvariable=self.segment_theta)
-        self.segment_theta_entry.grid(row=9, column=1, sticky=tk.E)
+        self.segment_theta_entry.grid(row=12, column=1, sticky=tk.E)
 
         window_theta_label = tk.Label(self, text="Iris Window Bounds (deg):")
-        window_theta_label.grid(row=10, column=0, sticky=tk.W)
+        window_theta_label.grid(row=13, column=0, sticky=tk.W)
 
         self.window_theta_entry = tk.Entry(self, textvariable=self.window_theta)
-        self.window_theta_entry.grid(row=10, column=1, sticky=tk.E)
+        self.window_theta_entry.grid(row=13, column=1, sticky=tk.E)
 
         num_features_label = tk.Label(self, text="Number of features to track:")
-        num_features_label.grid(row=11, column=0, sticky=tk.W)
+        num_features_label.grid(row=14, column=0, sticky=tk.W)
 
         num_features_act_label = tk.Label(self, textvariable=self.num_features)
-        num_features_act_label.grid(row=11, column=1)
+        num_features_act_label.grid(row=14, column=1)
 
         self.feature_loc_button = tk.Button(self, text="Select Feature", command=lambda: self.get_feature_coordinates(controller))
-        self.feature_loc_button.grid(row=12,column=0, sticky=tk.W)
+        self.feature_loc_button.grid(row=15,column=0, sticky=tk.W)
 
         self.feature_rec_button = tk.Button(self, text="Record Coordinates", command=lambda: self.record_feature_coordinates())
-        self.feature_rec_button.grid(row=12,column=1, sticky=tk.W)
+        self.feature_rec_button.grid(row=15,column=1, sticky=tk.W)
 
 
         self.remove_features_button = tk.Button(self, text="Clear Clicked Values", command=lambda: self.clear_coordinates())
-        self.remove_features_button.grid(row=11,column=2, sticky=tk.W)
+        self.remove_features_button.grid(row=14,column=2, sticky=tk.W)
 
         measurement_options_label = tk.Label(self, text="Run and Save", font=LARGE_FONT)
-        measurement_options_label.grid(row=13,column=0, sticky=tk.W)
+        measurement_options_label.grid(row=16,column=0, sticky=tk.W)
 
 
         self.run_button = tk.Button(self, text="Run", command=lambda: controller.run(self))
-        self.run_button.grid(row=14,column=0,  sticky=tk.W)
+        self.run_button.grid(row=17,column=0,  sticky=tk.W)
 
         self.save_button = tk.Button(self, text='Save to CSV', command=lambda: controller.save_results())
-        self.save_button.grid(row=14,column=1, sticky=tk.W)
+        self.save_button.grid(row=17,column=1, sticky=tk.W)
 
         #self.save_button = tk.Button(self, text='Save to CSV', command=lambda: controller.save_results())
         #self.save_button.grid(row=14,column=1, sticky=tk.W)
@@ -650,16 +803,16 @@ class MeasureTorsion(tk.Frame):
 
 
         measurement_options_label = tk.Label(self, text="Animate and Plot", font=LARGE_FONT)
-        measurement_options_label.grid(row=15,column=0, sticky=tk.W)
+        measurement_options_label.grid(row=18,column=0, sticky=tk.W)
 
         self.view_axis_button = tk.Button(self, text="Animate Axis Rotation", command=lambda: controller.view_axis_rotation())
-        self.view_axis_button.grid(row=16,column=0, sticky=tk.W)
+        self.view_axis_button.grid(row=19,column=0, sticky=tk.W)
 
         self.view_window_button = tk.Button(self, text="Animate Window Location", command=lambda: controller.view_window_rotation(self))
-        self.view_window_button.grid(row=16,column=1, sticky=tk.W)
+        self.view_window_button.grid(row=19,column=1, sticky=tk.W)
 
         self.view_torsion_button = tk.Button(self, text="Plot Results", command=lambda: controller.plot_torsion())
-        self.view_torsion_button.grid(row=16,column=2,sticky=tk.W)
+        self.view_torsion_button.grid(row=19,column=2,sticky=tk.W)
 
         self.update()
 
@@ -719,12 +872,35 @@ class MeasureTorsion(tk.Frame):
         Update the GUI page to enable/disable buttons and entry fields depending on the state.
         '''
 
-        # If correlation is to be performed on the full iris, do not allow the user to enter parameters for the subset method.
+        # If correlation is to be performed on the just full iris, do not allow the user to enter parameters for the subset method.
         if self.Fulliris.get():
             self.segment_theta_entry.config(state='disabled')
             self.window_theta_entry.config(state='disabled')
             self.feature_loc_button.config(state='disabled')
             self.feature_rec_button.config(state='disabled')
+
+        # If correlations is to be performed on both full and subsets, then allow all fields except for noise
+        if self.FullandSubset.get():
+            self.segment_theta_entry.config(state='normal')
+            self.window_theta_entry.config(state='normal')
+            self.feature_loc_button.config(state='normal')
+            self.feature_rec_button.config(state='normal')
+            self.Fulliris.set(1)
+            self.Subset.set(1)
+            self.AlternateFullSubset.set(0)
+            self.NoiseReplacement.set(0)
+
+        # if correlation is to be performed on full and subset alternatively, then allow all fields except for noise
+        if self.AlternateFullSubset.get():
+            self.segment_theta_entry.config(state='normal')
+            self.window_theta_entry.config(state='normal')
+            self.feature_loc_button.config(state='normal')
+            self.feature_rec_button.config(state='normal')
+            self.Fulliris.set(0)
+            self.Subset.set(0)
+            self.FullandSubset.set(0)
+            self.NoiseReplacement.set(0)
+            print('round 2')
 
         # If correlation is to be performed on a subset of the iris, allow the user to enter parameters for the subset method. Also do Not
         # allow the user to replace portions of the iris with noise.

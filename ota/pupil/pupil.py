@@ -55,6 +55,7 @@ class Pupil:
             #mat_eye = np.vstack((eyelid_mat, mat))
             #self.blink = pupil_obstruct(mat_eye, self.contour)
             #print(self.blink)
+
         else:
             self.center_col = None
             self.center_row = None

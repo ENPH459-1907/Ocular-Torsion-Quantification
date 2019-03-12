@@ -188,6 +188,7 @@ def xcorr2d(
 
         # force max_angle to be
         if max_angle != abs(start):
+            print(start, max_angle)
             print('WARNING: 2 * Max angle ({}) does not equal the total amount of extended degres to the reference window ({})'.format(2 * max_angle,  WINDOW_SHIFTS))
             max_angle = start
     # SUBSET METHOD
@@ -221,6 +222,7 @@ def xcorr2d(
             # take a subset of the extended reference window
             corr = corr2_coeff(iris_seg, reference_window[:, j:j + WINDOW_LENGTH])
         else:
+            print(WINDOW_LENGTH)
             # take a window from the current iris polar segment
             corr = corr2_coeff(iris_seg[:, j:j + WINDOW_LENGTH], reference_window)
 
@@ -417,7 +419,6 @@ def corr2_coeff(a,b):
         coeff : float, 0 =< x =< 1
             2D correlation coefficient.
     '''
-
     if a.shape != b.shape:
         raise Exception('Must be same shape')
 

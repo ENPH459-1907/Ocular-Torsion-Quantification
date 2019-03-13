@@ -222,7 +222,6 @@ def xcorr2d(
             # take a subset of the extended reference window
             corr = corr2_coeff(iris_seg, reference_window[:, j:j + WINDOW_LENGTH])
         else:
-            print(WINDOW_LENGTH)
             # take a window from the current iris polar segment
             corr = corr2_coeff(iris_seg[:, j:j + WINDOW_LENGTH], reference_window)
 

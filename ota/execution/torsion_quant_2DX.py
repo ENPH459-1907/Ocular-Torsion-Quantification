@@ -126,6 +126,7 @@ def quantify_torsion(
         start = 0
         reference_bounds = (0, 360) # what are these? 360 degrees?
         comparison_bounds = (0, 360)
+
     elif transform_mode == 'subset':
         feature_r, feature_theta = iris.get_polar_coord(feature_coords['r'], feature_coords['c'], pupil_list[start_frame])
         reference_bounds = (feature_theta - WINDOW_THETA, feature_theta + WINDOW_THETA)
@@ -134,7 +135,6 @@ def quantify_torsion(
 
     # TODO: This is actually such a dumb way, copying and pasting code.
     elif transform_mode == 'alternate':
-        print('doing alternate')
         # Get the aspects as if you were doing a full iris analysis
         if upper_iris and lower_iris:
             noise_replace = True
@@ -146,7 +146,6 @@ def quantify_torsion(
         feature_r, feature_theta = iris.get_polar_coord(feature_coords['r'], feature_coords['c'], pupil_list[start_frame])
         reference_bounds_sr = (feature_theta - WINDOW_THETA, feature_theta + WINDOW_THETA)
         comparison_bounds_sr = (feature_theta - SEGMENT_THETA, feature_theta + SEGMENT_THETA)
-        print(reference_bounds_sr, comparison_bounds_sr)
         start_sr = int((SEGMENT_THETA - WINDOW_THETA)/upsample_factor)
 
     # get the reference window from the first frame of the video
@@ -206,8 +205,9 @@ def quantify_torsion(
     # find torsion between start_frame+1:last_frame
     for i, frame in tqdm(enumerate(video[start_frame:end_frame])):
         frame_loc = i + start_frame
+        print(frame_loc)
         # check if a pupil exists, or if there is a blink
-        if not pupil_list[frame_loc] or blink_list[frame_loc] == 1 or blink_list[frame_loc] is None:
+        if not pupil_list[frame_loc] or blink_list[frame_loc] is None:
             # if there is no pupil, torsion cannot be calculated
             torsion[frame_loc] = None
             torsion_derivative[frame_loc] = None
@@ -217,15 +217,14 @@ def quantify_torsion(
             #current_frame = iris.iris_transform(frame, pupil_list[frame_loc], WINDOW_RADIUS, theta_resolution = upsample_factor, theta_window = comparison_bounds)
 
             # TODO: add when eyelid is not found???
-            if alternate and np.any(frame[:, :] == 0):
+            if alternate and blink_list[frame_loc] == 1:
                 print("oh no")
                 # TODO: Need to add detection, this method of checking if 0 exists is too much of a gong show
                 current_frame = iris.iris_transform(frame, pupil_list[frame_loc],
                                                     WINDOW_RADIUS,
                                                     theta_resolution=upsample_factor,
                                                     theta_window=comparison_bounds_sr)
-                print(first_window_sr.shape, current_frame.shape)
-                # get the degree of rotation of the current frame
+                # get the degree of rotation of the current frame based on reference frame
                 deg = xcorr2d.xcorr2d(current_frame,
                                       first_window_sr,
                                       start=start_sr,
@@ -234,16 +233,52 @@ def quantify_torsion(
                                       resolution=RESOLUTION,
                                       threshold=0,
                                       max_angle=pre.MAX_ANGLE)
+                if i > 0:
+                    # Calculate torsion based off of previous window
+                    previous_window_sr = iris.iris_transform(video[frame_loc-1],
+                                                          pupil_list[frame_loc-1],
+                                                          WINDOW_RADIUS,
+                                                          theta_resolution=upsample_factor,
+                                                          theta_window=reference_bounds_sr)
+                    # get the degree of rotation of the current frame based on previous frame
+                    previous_deg = xcorr2d.xcorr2d(current_frame,
+                                                  previous_window_sr,
+                                                  start=start_sr,
+                                                  prev_deg=None,
+                                                  torsion_mode=torsion_mode,
+                                                  resolution=RESOLUTION,
+                                                  threshold=0,
+                                                  max_angle=pre.MAX_ANGLE)
+                else:
+                    previous_deg = None
             else:
-                print('hihihi')
                 current_frame = iris.iris_transform(frame, pupil_list[frame_loc], WINDOW_RADIUS,
                                                     theta_resolution=upsample_factor, theta_window=comparison_bounds)
-                print(current_frame.shape, first_window.shape)
-                # get the degree of rotation of the current frame
-                deg = xcorr2d.xcorr2d(current_frame, first_window, start=start, prev_deg=None, torsion_mode=torsion_mode, resolution=RESOLUTION, threshold=0, max_angle=pre.MAX_ANGLE)
+                # get the degree of rotation of the current frame based on reference frame
+                deg = xcorr2d.xcorr2d(current_frame, first_window, start=start, prev_deg=None,
+                                      torsion_mode=torsion_mode, resolution=RESOLUTION, threshold=0,
+                                      max_angle=pre.MAX_ANGLE)
+                if i > 0:
+                    # get the previous frame
+                    previous_window = iris.iris_transform(video[frame_loc-1],
+                                                       pupil_list[frame_loc-1],
+                                                       WINDOW_RADIUS,
+                                                       theta_resolution=upsample_factor,
+                                                       theta_window=reference_bounds)
+                    previous_window = eyelid_removal.iris_extension(previous_window, theta_resolution=upsample_factor,
+                                                                 lower_theta=-pre.MAX_ANGLE, upper_theta=pre.MAX_ANGLE)
+
+                    # get the degree of rotation of the current frame based on previous frame
+                    previous_deg = xcorr2d.xcorr2d(current_frame, previous_window, start=start, prev_deg=None,
+                                          torsion_mode=torsion_mode, resolution=RESOLUTION, threshold=0,
+                                          max_angle=pre.MAX_ANGLE)
+                else:
+                    previous_deg = None
             # save the torsion3
             torsion[frame_loc] = deg
+            torsion_derivative[frame_loc] = previous_deg
 
+            '''
             # Get the change in angle compared to previous frame
             if frame_loc != start_frame :
                 if deg is None or torsion[frame_loc-1] is None:
@@ -252,6 +287,7 @@ def quantify_torsion(
                     torsion_derivative[frame_loc] = deg - torsion[frame_loc-1]
             else:
                 torsion_derivative[frame_loc] = None
+            '''
 
     return torsion, torsion_derivative
 

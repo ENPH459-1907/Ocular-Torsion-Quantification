@@ -129,6 +129,7 @@ class OcularTorsionApplication(tk.Tk):
             upper_iris = None
             lower_iris = None
 
+        '''
         if measure_state.AlternateFullSubset.get():
             transform_mode = 'alternate'
             feature_coordinates = measure_state.feature_coordinates
@@ -180,13 +181,12 @@ class OcularTorsionApplication(tk.Tk):
                      metadata=metadata_dict)
             self.data.append(data)
             print('done')
-
+        '''
         # Determine if the user wants to run 2D correlation on the whole iris
         if measure_state.Fulliris.get():
             # Set the transform mode and quantify torsion
             # TODO: Pass the blinks list in here
             transform_mode = 'full'
-            print('full')
 
             feature_coordinates = [None]
             window_theta = None
@@ -232,13 +232,11 @@ class OcularTorsionApplication(tk.Tk):
             torsion_data = [torsion_data[1] for torsion_data in torsion.items()]
             data.set(torsion = torsion_data, start_frame = self.start_frame.get(), pupil_list = self.pupil_list, metadata = metadata_dict)
             self.data.append(data)
-            print('done')
 
         # TODO: RIP
         # Determine if the user wants to run 2D correlation on subset and full iris
         if measure_state.AlternateFullSubset.get():
             # Extract gui state values required for the subset method
-            print('enter alternate')
             transform_mode = 'alternate'
             # Extract gui state values required for the subset method
             feature_coordinates = measure_state.feature_coordinates
@@ -275,14 +273,11 @@ class OcularTorsionApplication(tk.Tk):
             torsion_data = [torsion_data[1] for torsion_data in torsion.items()]
             data.set(torsion = torsion_data, start_frame = self.start_frame.get(), pupil_list = self.pupil_list, metadata = metadata_dict)
             self.data.append(data)
-            print('done')
-            print('done alternative')
 
         # Determine if the user wants to run 2D correlation on a subset of the iris
         if measure_state.Subset.get():
             # Set the transform mode to subset
             transform_mode = 'subset'
-            print('subset')
             # Extract gui state values required for the subset method
             feature_coordinates = measure_state.feature_coordinates
             # Run the algorithm for each set of recorded feature coordinates
@@ -298,7 +293,7 @@ class OcularTorsionApplication(tk.Tk):
                                                    self.pupil_list,
                                                    self.blink_list,
                                                    self.pupil_threshold.get(),
-                                                   segment_removal=False,
+                                                   alternate=False,
                                                    WINDOW_THETA = measure_state.window_theta.get(),
                                                    SEGMENT_THETA = measure_state.segment_theta.get(),
                                                    feature_coords = coords)
@@ -326,7 +321,7 @@ class OcularTorsionApplication(tk.Tk):
                 torsion_data = [torsion_data[1] for torsion_data in torsion_i.items()]
                 data.set(torsion = torsion_data, start_frame = self.start_frame.get(), pupil_list = self.pupil_list, metadata = metadata_dict)
                 self.data.append(data)
-                print('dnoe')
+
 
     def show_frame(self, cont):
         '''
@@ -454,26 +449,51 @@ class OcularTorsionApplication(tk.Tk):
 
     def identify_eyelids(self):
         '''
-        Identifies the eyelids.
+        Identifies the eyelids and blinks
         '''
         if self.pupil_list:
             self.eyelid_list = {}
+            self.blink_list = {}
             for i, frame in tqdm(enumerate(self.video[self.start_frame.get():self.end_frame.get()])):
                 frame_loc = i + self.start_frame.get()
                 # check if a pupil exists
                 if not self.pupil_list[frame_loc]:
                     self.eyelid_list[frame_loc] = None
+                    self.blink_list[frame_loc]  = None
                 else:
                     try:
                         self.eyelid_list[frame_loc] = eyelid.detect_eyelid(frame, self.pupil_list[frame_loc])
+                        try:
+                            self.blink_list[frame_loc] = eyelid.pupil_obstruct(self.eyelid_list[frame_loc],
+                                                                               self.pupil_list[frame_loc].contour)
+                        except:
+                            self.blink_list[frame_loc] = None
                     except:
                         self.eyelid_list[frame_loc] = None
+                        self.blink_list[frame_loc] = None
                         print('RIP') # LOL RIP indeed
+
+                #try something
+                self.blink_list[60] = 1
+                self.blink_list[61] = 1
+                self.blink_list[62] = 1
+                self.blink_list[63] = 1
+                self.blink_list[64] = 1
+                self.blink_list[65] = 1
+                self.blink_list[66] = 1
+                self.blink_list[67] = 1
+                self.blink_list[68] = 1
+                self.blink_list[69] = 1
+
+
+
 
     def identify_blinks(self):
         '''
         Identifies the blinks.
         If it is a blink, insert 1. If not blink, insert 0. Else, None.
+        Print blink locations
+        '''
         '''
         if self.pupil_list and self.eyelid_list:
             self.blink_list = {}
@@ -488,7 +508,12 @@ class OcularTorsionApplication(tk.Tk):
                     except:
                         self.blink_list[frame_loc] = None
                         print("double RIP")
-            print(self.blink_list)
+        '''
+        # Search for indices where there is a blink or a None -- pupil/eyelid not found
+        filtered_blinks = {k: v for k, v in self.blink_list.items() if v is None or v == 1}
+        #print(self.blink_list)
+        print('Blinks occur at frames: ')
+        print(str(filtered_blinks.keys()))
 
         
 class StartPage(tk.Frame):
@@ -900,7 +925,6 @@ class MeasureTorsion(tk.Frame):
             self.Subset.set(0)
             self.FullandSubset.set(0)
             self.NoiseReplacement.set(0)
-            print('round 2')
 
         # If correlation is to be performed on a subset of the iris, allow the user to enter parameters for the subset method. Also do Not
         # allow the user to replace portions of the iris with noise.

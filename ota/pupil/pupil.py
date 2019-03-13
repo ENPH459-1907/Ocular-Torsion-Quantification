@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 import scipy as sp
 from scipy import ndimage
 from math import *
+from ota.eyelid.eyelid import pupil_obstruct
 
 class EmptyAreas(Exception):
     def __init__(self):
@@ -34,19 +35,33 @@ class Pupil:
             'r' : Center row index
         radius : float
             Value representing the radius of the pupil in frame (distance measured in pixels)
+        width : float
+            Value representing the width of the pupil in frame (distance measured in pixels)
+        height : float
+            Value representing the height of the pupil in frame (distance measured in pixels)
         pupil_cnt : array_like
             Vector type object containing a list of points contained in the contour of the pupil.
                 0-index of point corresponds to column index
                 1-index of point corresponds to row index
+        blink : boolean
+            True : frame records a blink
+            False : frame does not record a blink
         """
 
         if skip_init is False:
-            self.center_col, self.center_row, self.radius, self.contour = self.calc_pupil_properties_fit_ellipse(frame, threshold=threshold)
+            self.center_col, self.center_row, self.radius, self.width, self.height, self.contour = self.calc_pupil_properties_fit_ellipse(frame, threshold=threshold)
+            #mat = np.ones((frame.shape[0]-100, frame.shape[1]))
+            #eyelid_mat = np.zeros((100, frame.shape[1]))
+            #mat_eye = np.vstack((eyelid_mat, mat))
+            #self.blink = pupil_obstruct(mat_eye, self.contour)
+            #print(self.blink)
+
         else:
             self.center_col = None
             self.center_row = None
             self.radius = None
             self.contour = None
+            #self.blink = None
 
     def calc_pupil_properties_fit_ellipse(self, frame, threshold=10):
         """
@@ -72,7 +87,6 @@ class Pupil:
                 0-index of point corresponds to column index
                 1-index of point corresponds to row index
         """
-
         # Threshold the image
         ret, I = cv2.threshold(frame, threshold, 255, cv2.THRESH_BINARY_INV)
 
@@ -107,7 +121,14 @@ class Pupil:
         # Obtain a rough estimate of the radius by averaging the major and minor axis lengths
         radius = (major_axis_length + minor_axis_length)/4
 
-        return col, row, radius, pupil_cnt
+        if ellipse[2] < 90:
+            width = major_axis_length
+            height = minor_axis_length
+        else:
+            width = minor_axis_length
+            height = major_axis_length
+
+        return col, row, radius, width, height, pupil_cnt
 
 
     def calc_pupil_properties_min_enclosing_circle(self, frame, threshold=10):
@@ -139,7 +160,7 @@ class Pupil:
         ret, I = cv2.threshold(frame, threshold, 255, cv2.THRESH_BINARY_INV)
 
         # Get a list of contours within the image
-        img, contours, heighrarchy =  cv2.findContours(opening, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        img, contours, heighrarchy =  cv2.findContours(I, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         # Get the index corresponding to the contour with the maximum enclosed area
         areas = []

@@ -30,8 +30,8 @@ def detect_eyelid(image, pupil, **kw):
 
     Returns
     ------------------------
-    eyelid_mat : array_like
-        An array with the same shape as image, containing 0s where there is eyelid has been detected and 1s elsewhere.
+    eyelids_removed : array_like
+        A video image with the parts above the upper eyelid and below the lower eyelid blocked out.
     """
 
     # Define parameters to be used in eyelid detection
@@ -42,7 +42,8 @@ def detect_eyelid(image, pupil, **kw):
     min_theta = kw.get('min_theta', 70 * np.pi/180) # Minimum angle for hough line search
     max_theta = kw.get('max_theta', 110 * np.pi/180) # Maximum angle for hough line search
     POLY_DEG = kw.get('POLY_DEG', 2) # Degree of polynomial to fit to eyelid points
-    POLY_TRANS = kw.get('POLY_TRANS', 0) # Amount by which to translate upper lid down and lower lid up to more conservatively ensure coverage of entire lid
+    UPPER_LID_POLY_TRANS = kw.get('UPPER_LID_POLY_TRANS', 40) # Amount by which to translate upper lid down to more conservatively ensure coverage of entire lid
+    LOWER_LID_POLY_TRANS = kw.get('LOWER_LID_POLY_TRANS', 0) # Amount by which to translate lower lid up to more conservatively ensure coverage of entire lid
 
     # Defined the image indices representing four regions of interest about the eye
     l_cols = (int(pupil.center_col - (pupil.radius + ROI_STRIP_WIDTH)), int(pupil.center_col - (pupil.radius + ROI_BUFFER)) )
@@ -149,35 +150,63 @@ def detect_eyelid(image, pupil, **kw):
     X = np.arange(0, image.shape[1], 1)
 
     z = np.polyfit(ulid_x, ulid_y, POLY_DEG)
-    z[POLY_DEG] = z[POLY_DEG] + POLY_TRANS # Translate the estimated eyelid down.
+    z[POLY_DEG] = z[POLY_DEG] + UPPER_LID_POLY_TRANS # Translate the estimated eyelid down.
     ulid_poly = np.poly1d(z)
     ulid = np.array(ulid_poly(X), dtype='int')
 
     z = np.polyfit(llid_x, llid_y, POLY_DEG)
-    z[POLY_DEG] = z[POLY_DEG] + POLY_TRANS # Translate the estimated eyelid up.
+    z[POLY_DEG] = z[POLY_DEG] - LOWER_LID_POLY_TRANS# Translate the estimated eyelid up.
     llid_poly = np.poly1d(z)
     llid = np.array(llid_poly(X), dtype='int')
 
-    # Construct the array to be returned
-    eyelid_mat = np.zeros(image.shape, dtype='uint8')
+    eyelids_removed = image.copy()
 
     # for each index value in ulid and llid
     for i in range(len(ulid)):
-        # set the slice between the upper and lower boundary to 1
-        eyelid_mat[ulid[i]:llid[i],i] = 1
+        # set the parts of the image above and below the eyelid to 0
+        if ulid[i] >= 0:
+            eyelids_removed[0:ulid[i],i] = 0
+        if llid[i] <= image.shape[1]:
+            eyelids_removed[llid[i]:image.shape[1],i] = 0
 
-    # # Assign the outline of the upper and lower lids 1 values
-    # eyelid_mat[ulid, X] = 1
-    # eyelid_mat[llid, X] = 1
-    #
-    # # Join the edges of the upper and lower lids with 1 values
-    # if ulid[0] < llid[0]:
-    #     eyelid_mat[ulid[0]:llid[0],0] = 1
-    # if ulid[-1] < llid[-1]:
-    #     eyelid_mat[ulid[-1]:llid[-1],-1] = 1
+    return eyelids_removed
 
-    # TODO implement the part that fills the interior of the upper and lower lids with 1s
-    # I was thinking of using cv2.floodFill() for this, but didn't have the time to implement it before my flight.
-    # https://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html (Search for floodFill)
+def pupil_obstruct(eyelid_mat, contour):
+    """
+    Detects if the upper and lower eyelids intersect the pupil
 
-    return eyelid_mat
+    Parameters
+    ------------------------
+    eyelid_mat : array_like
+        An array with the same shape as image, containing 0s where there is eyelid has been detected and 1s elsewhere.
+    contour: array_like
+        Vector type object containing a list of points contained in the contour of the pupil.
+            0-index of point corresponds to column index
+            1-index of point corresponds to row index
+
+    Returns
+    ------------------------
+    intersect : 0 or 1 or None
+        If 1, eyelid intersects pupil. False otherwise.
+    """
+    # If things are None, abort mission
+    if eyelid_mat is None or contour is None:
+        return None
+
+    # Find locations where eyelid exists
+    indices_zero = np.nonzero(eyelid_mat == 0)
+
+    # If there is no eyelid, just abort
+    if indices_zero[0].size == 0 or indices_zero[1].size == 0:
+        return True
+    eyelid_locs = [(indices_zero[0][i], indices_zero[1][i]) for i in range(0, len(indices_zero))]
+
+    # Get the contour into proper form: set of tuples (row, col)
+    contour = np.squeeze(contour)
+    contour = [tuple(x) for x in contour]
+
+    # Find the intersection between pupil contour and eyelid locations (intersection of 4 pixels)
+    intersection = np.array([x for x in contour if x in eyelid_locs])
+    if len(intersection) == 0:
+        return 0
+    return 1

@@ -7,6 +7,7 @@ from ota.pupil import pupil
 from ota.iris import iris, eyelid_removal
 from ota import presets as pre
 from tqdm import tqdm
+from math import *
 
 def quantify_torsion(
     WINDOW_RADIUS,
@@ -23,7 +24,9 @@ def quantify_torsion(
     SEGMENT_THETA = None,
     upper_iris = None,
     lower_iris = None,
-    feature_coords = None):
+    feature_coords = None,
+    calibration_frame = None,
+    calibration_angle = None,):
 
     '''
     Utilizes the 2D cross correlation algorithm xcorr2d to measure and return torsion using the settings given.
@@ -89,6 +92,14 @@ def quantify_torsion(
             Holds the dictionary of feature coordinates tracked during subset correlation.
             Mandatory input if transform_mode = 'subset'.
 
+        calibration_frame:
+            Integer
+            The frame used for calibration
+
+        calibration_angle:
+            Double
+            The angle the eye is rotated in the calibration frame
+
     Returns:
 
         torsion:
@@ -120,10 +131,18 @@ def quantify_torsion(
     # get the reference window from the first frame of the video
     # this will be the base for all torsion ie. all rotation is relative to this window
     if start_frame == reference_frame:
+        ref_pupil = pupil_list[start_frame]
         first_window = iris.iris_transform(video[start_frame], pupil_list[start_frame], WINDOW_RADIUS, theta_resolution = upsample_factor, theta_window = reference_bounds)
     else:
         ref_pupil = pupil.Pupil(video[reference_frame], threshold)
         first_window = iris.iris_transform(video[reference_frame], ref_pupil, WINDOW_RADIUS, theta_resolution = upsample_factor, theta_window = reference_bounds)
+
+    if calibration_frame != None:
+        h_dist = ref_pupil.center_col - pupil_list[calibration_frame].center_col
+        v_dist = ref_pupil.center_row - pupil_list[calibration_frame].center_row
+        eyeball_radius = sqrt(h_dist**2 + v_dist**2)/sin(calibration_angle*pi/180)
+    else:
+        eyeball_radius = None
 
     if noise_replace:
 
@@ -150,6 +169,7 @@ def quantify_torsion(
         first_window = eyelid_removal.iris_extension(first_window, theta_resolution = upsample_factor, lower_theta = -pre.MAX_ANGLE, upper_theta=pre.MAX_ANGLE)
 
     torsion = {}
+    transformed_iris = {}
     # find torsion between start_frame+1:last_frame
     for i, frame in tqdm(enumerate(video[start_frame:end_frame])):
         frame_loc = i + start_frame
@@ -160,124 +180,15 @@ def quantify_torsion(
             print('WARNING: No pupil in frame: %d \n Torsion cannot be calculated' % (frame_loc))
         else:
             # unwrap the iris (convert into polar)
-            current_frame = iris.iris_transform(frame, pupil_list[frame_loc], WINDOW_RADIUS, theta_resolution = upsample_factor, theta_window = comparison_bounds)
-            # get the degree of rotation of the current frame
-            deg = xcorr2d.xcorr2d(current_frame, first_window, start=start, prev_deg=None, torsion_mode=torsion_mode, resolution=RESOLUTION, threshold=0, max_angle=pre.MAX_ANGLE)
+            try:
+                current_frame = iris.iris_transform(frame, pupil_list[frame_loc], WINDOW_RADIUS, theta_resolution = upsample_factor, theta_window = comparison_bounds, reference_pupil=ref_pupil, eye_radius=eyeball_radius)
+                transformed_iris[frame_loc] = current_frame
+                # get the degree of rotation of the current frame
+                deg = xcorr2d.xcorr2d(current_frame, first_window, start=start, prev_deg=None, torsion_mode=torsion_mode, resolution=RESOLUTION, threshold=0, max_angle=pre.MAX_ANGLE)
+            except:
+                deg = None
+                print('WARNING: Torsion in frame %d could not be calculated' % (frame_loc))
             # save the torsion
             torsion[frame_loc] = deg
 
-    return torsion
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# import cv2
-# import numpy as np
-#
-# from ota import presets
-# from ota.torsion import xcorr2d
-# from ota.video import video as vid
-# from ota.pupil import pupil
-# from ota.iris import iris, eyelid_removal
-# from ota.data import data as dat
-#
-# def quantify_torsion(gui, controller):
-#     # PRESETS
-#     WINDOW_RADIUS = gui.radial_thickness.get() # how thick the window is in the radial direction
-#     THETA_RESOLUTION = gui.theta_resolution.get() # sampling resolution in transform
-#
-#     # get the video from the GUI
-#     video = controller.video
-#
-#     # store the starting and ending frame location
-#     start_frame = controller.start_frame.get()
-#     last_frame = controller.end_frame.get()
-#
-#     # dictionaries to store results
-#     pupil_list = controller.pupil_list
-#     # torsion
-#     torsion = {}
-#     feature_location_list = {} # (column,row) coordinates of maximum correlation
-#
-#     # try to find pupil at index start_frame
-#
-#     # get the user inputted bounds for extreme limits of usable iris
-#     upper_iris = gui.upper_iris_occ
-#     lower_iris = gui.lower_iris_occ
-#
-#     # transform (colum,row) into (theta,r) space about pupil centre
-#     # get the boundaries of usable iris in polar
-#     upper_iris_r, upper_iris_theta = iris.get_polar_coord(upper_iris['r'], upper_iris['c'], pupil_list[start_frame])
-#     lower_iris_r, lower_iris_theta = iris.get_polar_coord(lower_iris['r'], lower_iris['c'], pupil_list[start_frame])
-#
-#     # mirrors the upper angular boundary across the vertical axis
-#     upper_occlusion_theta = (90 - np.absolute(upper_iris_theta - 90), 90 + np.absolute(upper_iris_theta - 90))
-#
-#     # mirrors the lower angular boundary across the vertical axis
-#     # deal with the branch cut at 270
-#     if lower_iris_theta < 0:
-#         lower_occlusion_theta = (-90 - np.absolute(lower_iris_theta + 90), -90 + np.absolute(lower_iris_theta + 90))
-#     else:
-#         lower_occlusion_theta = (-90 - np.absolute(lower_iris_theta - 270), -90 + np.absolute(lower_iris_theta - 270))
-#
-#     # get the reference window from the first frame of the video
-#     # this will be the base for all torsion ie. all rotation is relative to this window
-#     first_window = iris.iris_transform(video[start_frame], pupil_list[start_frame], WINDOW_RADIUS, theta_resolution = THETA_RESOLUTION, theta_window = (0, 360))
-#
-#     # replace occluded sections with noise
-#     first_window = eyelid_removal.noise_replace(first_window, upper_occlusion_theta, lower_occlusion_theta)
-#
-#     # extend iris window
-#     first_window = eyelid_removal.iris_extension(current_frame, theta_resolution = THETA_RESOLUTION, lower_theta = -MAX_ANGLE, upper_theta=MAX_ANGLE)
-#
-#
-#     # find torsion between start_frame+1:last_frame
-#     for i, frame in enumerate(video[start_frame:last_frame]):
-#         frame_loc = i + start_frame
-#         # check if a pupil exists
-#         if not pupil_list[frame_loc]:
-#             # if there is no pupil, torsion cannot be calculated
-#             torsion[frame_loc] = None
-#             print('WARNING: No pupil in frame: %d \n Torsion cannot be calculated' % (frame_loc))
-#         else:
-#             # unwrap the iris (convert into polar)
-#             current_frame = iris.iris_transform(frame, pupil_list[frame_loc], WINDOW_RADIUS, theta_resolution = THETA_RESOLUTION, theta_window=theta_window)
-#             # get the degree of rotation of the current frame
-#             deg = xcorr2d.xcorr2d(current_frame, first_window, shift_first, prev_deg=None, mode='upsample', resolution=THETA_RESOLUTION, threshold=0, max_angle=MAX_ANGLE)
-#             # save the torsion
-#             torsion[frame_loc] = deg
-#
-#     # Create dictionary of time values corresponding to the frames in frame_index_list
-#
-#     # Initialize data object
-#     # TODO add video parameters to metadata as dictionary
-#     data = dat.Data()
-#
-#     # set the data object with the results
-#     data.set(
-#         start_frame = start_frame,
-#         torsion = torsion,
-#         metadata = {
-#             'VIDEO_PATH': controller.video_path,
-#             'VIDEO_FPS': video.fps
-#         }
-#     )
-#     # data.frame_index_list = frame_index_list
-#     # data.frame_time = frame_time
-#     # data.torsion = torsion
-#     # data.video_str = settings.VIDEO_PATH
-#     # data.video_fps = video.fps
-#     # TODO
-#
-#     return data
+    return torsion, transformed_iris

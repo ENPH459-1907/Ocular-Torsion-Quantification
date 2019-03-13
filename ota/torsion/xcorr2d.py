@@ -387,7 +387,7 @@ def reduced_corr(corrs, threshold, lb=0, ub=None, offset=0):
     I = np.where(y > threshold)[0]
 
     if len(I) == 0:
-        print(lb,ub,corrs)
+        #print(lb,ub,corrs)
         raise CorrelationBelowThreshold('All frame correlation below threshold value: {}'.format(threshold))
 
     # index locations of correlation values above threshold
@@ -435,76 +435,3 @@ def corr2_coeff(a,b):
 
     # calculate the 2D coefficient
     return np.multiply(a_m,b_m).sum() / np.sqrt(a_ss * b_ss)
-
-
-# OLD method for xcorr2d that does not use interpolation
-# def xcorr2d(curr_frame, prev_window, prev_idx, first_window, first_idx, WINDOW_LENGTH=0, WINDOW_SHIFTS=0):
-#     '''
-#     Find a pseduo 2D cross correlation between the first and/or previous window
-#     of an image. A window is taken from the current frame and moved accross the
-#     columns of the other windows.
-#
-#     Note, a window is a subset of a frame.
-#
-#     INPUTS
-#         curr_frame - current frame as an NxM numpy array
-#         prev_window - previously higest correlated window with NxK where K<M
-#         prev_idx - the starting location of the prev_window from the previous frame
-#             as an integer between
-#         first_window - See prev_window.
-#         first_idx - See prev_idx.
-#         WINDOW_LENGTH - The length of the window (less then the length of the frame)
-#         WINDOW_SHIFTS - The maximum number of shifts of the window to fully cover
-#             the frame
-#
-#     OUTPUTS
-#         shift_prev - The indice shift between the prev_idx and the location of max correlation
-#         max_prev_corr - The maximum correlation between the curr frame window and
-#             the previous window.
-#         shift_first - See shift_prev.
-#         max_first_corr - See max_prev_corr.
-#
-#     '''
-#
-#     max_prev_corr = 0
-#     max_prev_corr_idx = 0
-#
-#     max_first_corr = 0
-#     max_first_corr_idx = 0
-#
-#     prev_corr = 0
-#     first_corr = 0
-#
-#     shift_prev = shift_first = 0
-#
-#     for j in range(WINDOW_SHIFTS):
-#
-#         curr_window = curr_frame[:, j:j + WINDOW_LENGTH]
-#
-#         # slice the iris data using the preset lengths
-#         # calculate the correlation between the current iris slice and the last frame
-#         max_prev_corr, max_prev_corr_idx = get_max_corr(curr_window, prev_window, max_prev_corr, max_prev_corr_idx, j)
-#
-#         # if the first frame is passed, then repeat the above calculation with the first frame instead
-#         max_first_corr, max_first_corr_idx = get_max_corr(curr_window, first_window, max_first_corr, max_first_corr_idx, j)
-#
-#     shift_prev = max_prev_corr_idx - prev_idx
-#     shift_first = max_first_corr_idx - first_idx
-#
-#     return shift_prev, max_prev_corr, shift_first, max_first_corr
-
-# # TODO is this required, instead save list of maximum correlation so we can
-# # interpolate to a higher resolution
-# def get_max_corr(a, b, max_corr, max_loc, idx):
-#     '''
-#     Calculate the 2D correlation coficient and return the maximum correlation and
-#     index location.
-#     '''
-#     corr = corr2_coeff(a, b)
-#
-#     # update if corr is bigger then current max
-#     if corr > max_corr:
-#         max_corr = corr
-#         max_loc = idx
-#
-#     return max_corr, max_loc

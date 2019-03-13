@@ -4,7 +4,7 @@ import scipy as sp
 from scipy import ndimage
 import matplotlib.pyplot as plt
 from math import *
-from cv2 import remap
+from cv2 import remap, INTER_LINEAR
 
 # TODO instead of ret_cartesian use mode='polar' or cartesian
 # https://github.com/scipy/scipy/blob/v0.19.1/scipy/signal/signaltools.py#L111-L269
@@ -18,6 +18,7 @@ def iris_transform(
     r_resolution=1,
     mode='polar',
     reference_pupil=None,
+    eye_radius=None,
     ):
     '''
     Transforms the iris in the given frame into polar representation where the vertical
@@ -35,13 +36,14 @@ def iris_transform(
         ret_cartesian - boolean value which allows the return of only the iris in
                         cartesian coordinates. By default this is set to false
         reference_pupil - the reference pupil used for geometric correction
+        eye_radius - the radius of the eyeball in pixels
 
     Outputs:
         polar_iris - opencv image (numpy array) of extracted iris in polar coordinates
         cartesian_iris - opencv image (numpy array) of extracted iris in cartesian coordinates
     '''
     inner_radius_buffer = 5
-    min_radius = int(pupil.radius) + inner_radius_buffer
+    min_radius = int(pupil.major/2) + inner_radius_buffer
     max_radius = min_radius + int(iris_thickness)
     pupil_row_loc = int(pupil.center_row)
     pupil_col_loc = int(pupil.center_col)
@@ -70,8 +72,9 @@ def iris_transform(
         coordinates = np.mgrid[min_radius:max_radius:n_radius * 1j, theta_window[0]:theta_window[1]:n_theta * 1j]
         radii = coordinates[0,:]
         angles = np.radians(coordinates[1,:])
+        major_minor_ratio = pupil.minor/pupil.major
 
-        if reference_pupil == None or pupil.width >= reference_pupil.width or pupil.height >= reference_pupil.height:
+        if reference_pupil == None or major_minor_ratio >= 0.9:
             # Using scipy's map_coordinates(), we map the input array into polar
             # space centered about the detected pupil center location.
             polar_iris = ndimage.interpolation.map_coordinates(frame,
@@ -81,37 +84,50 @@ def iris_transform(
 
             return polar_iris
         else:
-            map_x = {}
-            map_y = {}
+            h_pupil_movement = pupil.center_col - reference_pupil.center_col
+            v_pupil_movement = pupil.center_row - reference_pupil.center_row
+
+            if eye_radius == None:
+                lateral_angle = get_lateral_angle(major_minor_ratio)
+                r_eye = sqrt(h_pupil_movement**2+v_pupil_movement**2)/sp.sin(lateral_angle)
+            else:
+                r_eye = eye_radius
+
+            phi0 = asin(h_pupil_movement/r_eye)
+            theta0 = asin(v_pupil_movement/r_eye)
+            map_x = np.zeros((n_radius, n_theta), dtype=np.float32)
+            map_y = np.zeros((n_radius, n_theta), dtype=np.float32)
 
             for r in range(min_radius,max_radius,r_resolution):
                 for a in range(theta_window[0],theta_window[1],theta_resolution):
-                    print(pupil.center_row, pupil.center_col)
-                    print(reference_pupil.center_row, reference_pupil.center_col)
-                    h_pupil_movement = pupil.center_row - reference_pupil.center_row
-                    v_pupil_movement = pupil.center_col - reference_pupil.center_col
-                    h_dist_from_center = r * sp.sin(a)
-                    v_dist_from_center = r * sp.cos(a)
-                    print(h_pupil_movement)
-                    print(pupil.width/reference_pupil.width)
-                    print((pupil.width/reference_pupil.width)**2)
-                    print(sqrt(1 - (pupil.width/reference_pupil.width)**2))
-                    r_eye = h_pupil_movement / sqrt(1 - (pupil.width/reference_pupil.width)**2)
-                    print(r_eye, v_pupil_movement * reference_pupil.height / sqrt(reference_pupil.height**2 - pupil.height**2))
-                    map_x[(a, r)] = reference_pupil.center_row + h_pupil_movement * sqrt(1 - (h_dist_from_center/r_eye)**2) + sqrt(1-(h_pupil_movement/r_eye)**2) * h_dist_from_center
-                    map_y[(a, r)] = reference_pupil.center_col + v_pupil_movement * sqrt(1 - (v_dist_from_center/r_eye)**2) + sqrt(1-(v_pupil_movement/r_eye)**2) * v_dist_from_center
+                    phi = phi0 + asin(r * cos(a * pi / 180) / r_eye)
+                    theta = theta0 - asin(r * sin(a * pi / 180) / r_eye)
+                    x_loc = reference_pupil.center_col + r_eye * sin(phi)
+                    y_loc = reference_pupil.center_row + r_eye * sin(theta)
+                    #frame[min(y_loc, frame.shape[0]-1)][min(x_loc, frame.shape[1]-1)] = 0
+                    map_x[((r - min_radius)/r_resolution, (a - theta_window[0])/theta_resolution)] = x_loc
+                    map_y[((r - min_radius)/r_resolution, (a - theta_window[0])/theta_resolution)] = y_loc
 
-            geometric_corrected_iris = cv.remap(frame, map_x, map_y)
-
-            plt.imshow(geometric_corrected_iris)
-            plt.show()
-
+            geometric_corrected_iris = remap(frame, map_x, map_y, INTER_LINEAR)
             return geometric_corrected_iris
-
     else:
         # TODO throw exception
         print('Mode not supported')
         return None
+
+def get_lateral_angle(ratio, ref_ratio=0.98):
+    """
+    Calculates the angle of lateral motion from the ratio of the major and
+    minor axes of the pupil using the formula from Atchison-Smith.
+    Inputs:
+        ratio - the minor:major ratio
+    Outputs:
+        angle - the lateral rotation angle
+    """
+    a = 1.8698*10**-9
+    b = -1.0947*10**-4
+    c = 1 - ratio
+    return sqrt((-b - sqrt(b**2-4*a*c))/(2*a))*pi/180
 
 def get_polar_coord(r, c, pupil):
     """

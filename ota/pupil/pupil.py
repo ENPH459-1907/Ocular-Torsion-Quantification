@@ -34,18 +34,20 @@ class Pupil:
             'r' : Center row index
         radius : float
             Value representing the radius of the pupil in frame (distance measured in pixels)
-        width : float
-            Value representing the width of the pupil in frame (distance measured in pixels)
-        height : float
-            Value representing the height of the pupil in frame (distance measured in pixels)
+        major : float
+            Value representing the major axis of the pupil in frame (distance measured in pixels)
+        minor : float
+            Value representing the minor axis of the pupil in frame (distance measured in pixels)
         pupil_cnt : array_like
             Vector type object containing a list of points contained in the contour of the pupil.
                 0-index of point corresponds to column index
                 1-index of point corresponds to row index
+        angle : float
+            Value representing the tile angle of the pupil in degrees
         """
 
         if skip_init is False:
-            self.center_col, self.center_row, self.radius, self.width, self.height, self.contour = self.calc_pupil_properties_fit_ellipse(frame, threshold=threshold)
+            self.center_col, self.center_row, self.radius, self.major, self.minor, self.contour, self.angle = self.calc_pupil_properties_fit_ellipse(frame, threshold=threshold)
         else:
             self.center_col = None
             self.center_row = None
@@ -71,10 +73,16 @@ class Pupil:
             'r' : Center row index
         radius : float
             Value representing the radius of the pupil in frame (distance measured in pixels)
+        major : float
+            Value representing the major axis length
+        minor : float
+            Value representing the minor axis length
         pupil_cnt : array_like
             Vector type object containing a list of points contained in the contour of the pupil.
                 0-index of point corresponds to column index
                 1-index of point corresponds to row index
+        angle : float
+            Value representing the tilt of the pupil
         """
         # Threshold the image
         ret, I = cv2.threshold(frame, threshold, 255, cv2.THRESH_BINARY_INV)
@@ -106,18 +114,12 @@ class Pupil:
         row = ellipse[0][1]
         minor_axis_length = ellipse[1][0]
         major_axis_length = ellipse[1][1]
+        angle = ellipse[2]
 
         # Obtain a rough estimate of the radius by averaging the major and minor axis lengths
         radius = (major_axis_length + minor_axis_length)/4
 
-        if ellipse[2] < 90:
-            width = major_axis_length
-            height = minor_axis_length
-        else:
-            width = minor_axis_length
-            height = major_axis_length
-
-        return col, row, radius, width, height, pupil_cnt
+        return col, row, radius, major_axis_length, minor_axis_length, pupil_cnt, angle
 
 
     def calc_pupil_properties_min_enclosing_circle(self, frame, threshold=10):

@@ -1,7 +1,6 @@
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname('.'), os.path.pardir)))
 
-import matplotlib.pyplot as plt
 import cv2
 import cProfile
 import numpy as np
@@ -107,6 +106,7 @@ def detect_eyelid(image, pupil, **kw):
     y0 = rho * b
     ll_x = np.array(x0 + lspace*(-b), dtype='int')
     ll_y = np.array(y0 + lspace*(a), dtype='int')
+
 
     # Only keep points of the detected lines that lie within the ROIs
     inds = reduce(np.intersect1d, ( np.where(ul_x >= 0), np.where(ul_y >= 0),

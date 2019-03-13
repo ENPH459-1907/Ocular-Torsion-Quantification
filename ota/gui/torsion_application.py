@@ -77,6 +77,7 @@ class OcularTorsionApplication(tk.Tk):
 
         self.pupil_list = None
         self.eyelid_list = None
+        self.polar_transform_list = None
         self.pupil_threshold = tk.IntVar()
         self.data = []
 
@@ -127,7 +128,21 @@ class OcularTorsionApplication(tk.Tk):
         if measure_state.Fulliris.get():
             # Set the transform mode and quantify torsion
             transform_mode = 'full'
-            torsion = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode, self.video, self.start_frame.get(), self.reference_frame.get(), self.end_frame.get(), self.pupil_list, self.pupil_threshold.get(), upper_iris = upper_iris, lower_iris = lower_iris)
+            torsion, self.polar_transform_list = tq2dx.quantify_torsion(
+                RADIUS,
+                RESOLUTION,
+                torsion_mode,
+                transform_mode,
+                self.video,
+                self.start_frame.get(),
+                self.reference_frame.get(),
+                self.end_frame.get(),
+                self.pupil_list,
+                self.pupil_threshold.get(),
+                upper_iris = upper_iris,
+                lower_iris = lower_iris,
+                calibration_frame = (measure_state.calibration_frame.get() if measure_state.Calibrate.get() else None),
+                calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None))
             # Construct metadata
             metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status, "radial_thickness": measure_state.radial_thickness.get(), "video_path": self.video_path.get(),"video_fps": self.video.fps}
@@ -159,7 +174,22 @@ class OcularTorsionApplication(tk.Tk):
             feature_coordinates = measure_state.feature_coordinates
             # Run the algorithm for each set of recorded feature coordinates
             for i, coords in enumerate(feature_coordinates):
-                torsion_i = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode, self.video, self.start_frame.get(), self.reference_frame.get(), self.end_frame.get(), self.pupil_list, self.pupil_threshold.get(), WINDOW_THETA = measure_state.window_theta.get(), SEGMENT_THETA = measure_state.segment_theta.get(),feature_coords = coords)
+                torsion_i = tq2dx.quantify_torsion(
+                    RADIUS,
+                    RESOLUTION,
+                    torsion_mode,
+                    transform_mode,
+                    self.video,
+                    self.start_frame.get(),
+                    self.reference_frame.get(),
+                    self.end_frame.get(),
+                    self.pupil_list,
+                    self.pupil_threshold.get(),
+                    WINDOW_THETA = measure_state.window_theta.get(),
+                    SEGMENT_THETA = measure_state.segment_theta.get(),
+                    feature_coords = coords,
+                    calibration_frame = (measure_state.calibration_frame.get() if self.Calibrate.get() else None),
+                    calibration_angle = (measure_state.calibration_angle.get() if self.Calibrate.get() else None))
                 # Construct metadata
                 metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, Window Theta (deg): %(window_theta)d, Segment Theta (deg): %(segment_theta)d, Radial Thickness (pix): %(radial_thickness)d, Feature Number: %(feature_num)d, Video Path: %(video_path)s, Video FPS: %(video_fps)d' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode,"window_theta": measure_state.window_theta.get(),"segment_theta": measure_state.segment_theta.get(),"radial_thickness": measure_state.radial_thickness.get(),"feature_num": (i+1),"video_path": self.video_path.get(),"video_fps": self.video.fps}
@@ -248,6 +278,10 @@ class OcularTorsionApplication(tk.Tk):
         if self.pupil_list:
             scroll.pupil_scroll(self.video, self.pupil_list)
 
+    def scroll_polar_transform(self):
+        if self.polar_transform_list:
+            scroll.polar_transform_scroll(self.video, self.polar_transform_list)
+
     def view_axis_rotation(self):
         '''
         Scroll through the video while overlaying the pupil and a set of axis that rotate with torsion results.
@@ -309,7 +343,8 @@ class OcularTorsionApplication(tk.Tk):
                     try:
                         self.eyelid_list[frame_loc] = eyelid.detect_eyelid(frame, self.pupil_list[frame_loc])
                     except:
-                        print('RIP')
+                        self.eyelid_list[frame_loc] = None
+
         
 class StartPage(tk.Frame):
     '''
@@ -428,6 +463,14 @@ class MeasureTorsion(tk.Frame):
             If upsampling is used, resolution gives the degree of upsampling used during the iris transform.
             If interpolation is used, iris transform is performed using a transform resolution of 1deg/pixel and interpolated at increments given by resolution.
 
+        calibration_frame:
+            Integer
+            (Optional) the to use for calibration
+
+        calibration_angle:
+            Double
+            (Optional) the angle the eye is rotated in the calibration frame
+
         feature_coordinates:
             List of dictionaries, {'c': column index, 'r': row index}
             Holds the dictionaries of feature coordinates tracked during subset correlation.
@@ -459,6 +502,8 @@ class MeasureTorsion(tk.Frame):
 
         self.Subset = tk.IntVar()
 
+        self.Calibrate = tk.IntVar()
+
         self.NoiseReplacement = tk.IntVar()
 
         # Thickness, beyond the pupil edge of both the iris segment and window.
@@ -472,6 +517,12 @@ class MeasureTorsion(tk.Frame):
 
         # The degree of upsampling or interpolation used in the theta axis of transform. [deg/pixel].
         self.resolution= tk.DoubleVar()
+
+        # The to use for calibration
+        self.calibration_frame = tk.IntVar()
+
+        # The angle the eye is rotated at the calibration frame
+        self.calibration_angle = tk.DoubleVar()
 
         # List used to store the dictionary that holds the row and column indicies of the feature coordinates.
         self.feature_coordinates = []
@@ -507,6 +558,9 @@ class MeasureTorsion(tk.Frame):
         subset_check = tk.Checkbutton(self, text="Subset Iris", variable = self.Subset, command=lambda: [self.Fulliris.set(not(self.Subset.get())), self.update()])
         subset_check.grid(row=3,column=1, sticky=tk.W)
 
+        calibrate_check = tk.Checkbutton(self, text="Calibrate", variable = self.Calibrate, command=lambda: [self.update()])
+        calibrate_check.grid(row=3,column=2, sticky=tk.W)
+
         noise_replacement_check = tk.Checkbutton(self, text="Noise Replacement", variable = self.NoiseReplacement, command=lambda: [self.update()])
         noise_replacement_check.grid(row=2,column=2, sticky=tk.W)
 
@@ -522,80 +576,95 @@ class MeasureTorsion(tk.Frame):
         resolution = tk.Entry(self, textvariable=self.resolution)
         resolution.grid(row=5, column=1, sticky=tk.W)
 
+        calibration_frame_label = tk.Label(self, text="Calibration Frame:")
+        calibration_frame_label.grid(row=6, column=0, sticky=tk.W)
+
+        self.calibration_frame_input = tk.Entry(self, textvariable=self.calibration_frame)
+        self.calibration_frame_input.grid(row=6, column=1, sticky=tk.W)
+
+        calibration_angle_label = tk.Label(self, text="Calibration Angle (degree):")
+        calibration_angle_label.grid(row=7, column=0, sticky=tk.W)
+
+        self.calibration_angle_input = tk.Entry(self, textvariable=self.calibration_angle)
+        self.calibration_angle_input.grid(row=7, column=1, sticky=tk.W)
+
         measurement_options_label = tk.Label(self, text="Measurement Settings", font=LARGE_FONT)
-        measurement_options_label.grid(row=6,column=0, sticky=tk.W)
+        measurement_options_label.grid(row=8,column=0, sticky=tk.W)
 
         self.upper_occ_get_button = tk.Button(self, text="Select Upper Occlusion Limit", command=lambda: self.get_occlusion_coordinates(controller))
-        self.upper_occ_get_button.grid(row=7,column=0, sticky=tk.W)
+        self.upper_occ_get_button.grid(row=9,column=0, sticky=tk.W)
 
         self.upper_occ_rec_button = tk.Button(self, text="Record Upper Occlusion Limit", command=lambda: self.record_upper_occ())
-        self.upper_occ_rec_button.grid(row=7,column=1, sticky=tk.E)
+        self.upper_occ_rec_button.grid(row=9,column=1, sticky=tk.E)
 
         self.upper_set_check = tk.StringVar()
         self.upper_set_check.set('Not Set')
         upper_check_label = tk.Label(self, textvariable=self.upper_set_check)
-        upper_check_label.grid(row=7,column=2, sticky=tk.W)
+        upper_check_label.grid(row=9,column=2, sticky=tk.W)
 
         self.lower_occ_get_button = tk.Button(self, text="Select lower Occlusion Limit", command=lambda: self.get_occlusion_coordinates(controller))
-        self.lower_occ_get_button.grid(row=8,column=0, sticky=tk.W)
+        self.lower_occ_get_button.grid(row=10,column=0, sticky=tk.W)
 
         self.lower_occ_rec_button = tk.Button(self, text="Record Lower Occlusion Limit", command=lambda: self.record_lower_occ())
-        self.lower_occ_rec_button.grid(row=8,column=1, sticky=tk.E)
+        self.lower_occ_rec_button.grid(row=10,column=1, sticky=tk.E)
 
         self.lower_set_check = tk.StringVar()
         self.lower_set_check.set('Not Set')
         lower_check_label = tk.Label(self, textvariable=self.lower_set_check)
-        lower_check_label.grid(row=8,column=2, sticky=tk.W)
+        lower_check_label.grid(row=10,column=2, sticky=tk.W)
 
         segment_theta_label = tk.Label(self, text="Iris Segment Bounds (deg):")
-        segment_theta_label.grid(row=9, column=0, sticky=tk.W)
+        segment_theta_label.grid(row=11, column=0, sticky=tk.W)
 
         self.segment_theta_entry = tk.Entry(self, textvariable=self.segment_theta)
-        self.segment_theta_entry.grid(row=9, column=1, sticky=tk.E)
+        self.segment_theta_entry.grid(row=11, column=1, sticky=tk.E)
 
         window_theta_label = tk.Label(self, text="Iris Window Bounds (deg):")
-        window_theta_label.grid(row=10, column=0, sticky=tk.W)
+        window_theta_label.grid(row=12, column=0, sticky=tk.W)
 
         self.window_theta_entry = tk.Entry(self, textvariable=self.window_theta)
-        self.window_theta_entry.grid(row=10, column=1, sticky=tk.E)
+        self.window_theta_entry.grid(row=12, column=1, sticky=tk.E)
 
         num_features_label = tk.Label(self, text="Number of features to track:")
-        num_features_label.grid(row=11, column=0, sticky=tk.W)
+        num_features_label.grid(row=13, column=0, sticky=tk.W)
 
         num_features_act_label = tk.Label(self, textvariable=self.num_features)
-        num_features_act_label.grid(row=11, column=1)
+        num_features_act_label.grid(row=13, column=1)
 
         self.feature_loc_button = tk.Button(self, text="Select Feature", command=lambda: self.get_feature_coordinates(controller))
-        self.feature_loc_button.grid(row=12,column=0, sticky=tk.W)
+        self.feature_loc_button.grid(row=14,column=0, sticky=tk.W)
 
         self.feature_rec_button = tk.Button(self, text="Record Coordinates", command=lambda: self.record_feature_coordinates())
-        self.feature_rec_button.grid(row=12,column=1, sticky=tk.W)
+        self.feature_rec_button.grid(row=14,column=1, sticky=tk.W)
 
 
         self.remove_features_button = tk.Button(self, text="Clear Clicked Values", command=lambda: self.clear_coordinates())
-        self.remove_features_button.grid(row=11,column=2, sticky=tk.W)
+        self.remove_features_button.grid(row=13,column=2, sticky=tk.W)
 
         measurement_options_label = tk.Label(self, text="Run and Save", font=LARGE_FONT)
-        measurement_options_label.grid(row=13,column=0, sticky=tk.W)
+        measurement_options_label.grid(row=15,column=0, sticky=tk.W)
 
 
         self.run_button = tk.Button(self, text="Run", command=lambda: controller.run(self))
-        self.run_button.grid(row=14,column=0,  sticky=tk.W)
+        self.run_button.grid(row=16,column=0,  sticky=tk.W)
 
         self.save_button = tk.Button(self, text='Save to CSV', command=lambda: controller.save_results())
-        self.save_button.grid(row=14,column=1, sticky=tk.W)
+        self.save_button.grid(row=16,column=1, sticky=tk.W)
 
         measurement_options_label = tk.Label(self, text="Animate and Plot", font=LARGE_FONT)
-        measurement_options_label.grid(row=15,column=0, sticky=tk.W)
+        measurement_options_label.grid(row=17,column=0, sticky=tk.W)
 
         self.view_axis_button = tk.Button(self, text="Animate Axis Rotation", command=lambda: controller.view_axis_rotation())
-        self.view_axis_button.grid(row=16,column=0, sticky=tk.W)
+        self.view_axis_button.grid(row=18,column=0, sticky=tk.W)
 
         self.view_window_button = tk.Button(self, text="Animate Window Location", command=lambda: controller.view_window_rotation(self))
-        self.view_window_button.grid(row=16,column=1, sticky=tk.W)
+        self.view_window_button.grid(row=18,column=1, sticky=tk.W)
 
         self.view_torsion_button = tk.Button(self, text="Plot Results", command=lambda: controller.plot_torsion())
-        self.view_torsion_button.grid(row=16,column=2,sticky=tk.W)
+        self.view_torsion_button.grid(row=18,column=2,sticky=tk.W)
+
+        self.preview_polar_transform_button = tk.Button(self, text="Preview Polar Transform", command=lambda: controller.scroll_polar_transform())
+        self.preview_polar_transform_button.grid(row=19,column=0,sticky=tk.W)
 
         self.update()
 
@@ -686,6 +755,15 @@ class MeasureTorsion(tk.Frame):
 
             self.lower_occ_get_button.config(state='disabled')
             self.lower_occ_rec_button.config(state='disabled')
+
+
+        if self.Calibrate.get():
+            self.calibration_frame_input.config(state='normal')
+            self.calibration_angle_input.config(state='normal')
+        else:
+            self.calibration_frame_input.config(state='disabled')
+            self.calibration_angle_input.config(state='disabled')
+
 
 def run():
 

@@ -1,6 +1,7 @@
 import numpy as np
 import cv2, pdb, os
 from matplotlib import pyplot as plt
+from ota.eyelid.eyelid import pupil_obstruct
 
 import scipy as sp
 from scipy import ndimage
@@ -44,6 +45,9 @@ class Pupil:
                 1-index of point corresponds to row index
         angle : float
             Value representing the tile angle of the pupil in degrees
+        blink : boolean
+            True : frame records a blink
+            False : frame does not record a blink
         """
 
         if skip_init is False:
@@ -151,7 +155,7 @@ class Pupil:
         ret, I = cv2.threshold(frame, threshold, 255, cv2.THRESH_BINARY_INV)
 
         # Get a list of contours within the image
-        img, contours, heighrarchy =  cv2.findContours(opening, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        img, contours, heighrarchy =  cv2.findContours(I, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         # Get the index corresponding to the contour with the maximum enclosed area
         areas = []

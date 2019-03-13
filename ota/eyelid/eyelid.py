@@ -170,3 +170,26 @@ def detect_eyelid(image, pupil, **kw):
             eyelids_removed[llid[i]:image.shape[1],i] = 0
 
     return eyelids_removed
+
+def pupil_obstruct(eyelid_mat, contour):
+    # If things are None, abort mission
+    if eyelid_mat is None or contour is None:
+        return None
+
+     # Find locations where eyelid exists
+    indices_zero = np.nonzero(eyelid_mat == 0)
+
+     # If there is no eyelid, just abort
+    if indices_zero[0].size == 0 or indices_zero[1].size == 0:
+        return True
+    eyelid_locs = [(indices_zero[0][i], indices_zero[1][i]) for i in range(0, len(indices_zero))]
+
+     # Get the contour into proper form: set of tuples (row, col)
+    contour = np.squeeze(contour)
+    contour = [tuple(x) for x in contour]
+
+     # Find the intersection between pupil contour and eyelid locations (intersection of 4 pixels)
+    intersection = np.array([x for x in contour if x in eyelid_locs])
+    if len(intersection) == 0:
+        return 0
+    return 1

@@ -205,7 +205,6 @@ def quantify_torsion(
     # find torsion between start_frame+1:last_frame
     for i, frame in tqdm(enumerate(video[start_frame:end_frame])):
         frame_loc = i + start_frame
-        print(frame_loc)
         # check if a pupil exists, or if there is a blink
         if not pupil_list[frame_loc] or blink_list[frame_loc] is None:
             # if there is no pupil, torsion cannot be calculated
@@ -218,7 +217,6 @@ def quantify_torsion(
 
             # TODO: add when eyelid is not found???
             if alternate and blink_list[frame_loc] == 1:
-                print("oh no")
                 # TODO: Need to add detection, this method of checking if 0 exists is too much of a gong show
                 current_frame = iris.iris_transform(frame, pupil_list[frame_loc],
                                                     WINDOW_RADIUS,

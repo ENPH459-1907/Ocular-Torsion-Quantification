@@ -2,11 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="312bda1b-7ff6-4170-b39f-9005bce5cfb2" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py" beforeDir="false" afterPath="$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ota/gui/torsion_application.py" beforeDir="false" afterPath="$PROJECT_DIR$/ota/gui/torsion_application.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ota/torsion/xcorr2d.py" beforeDir="false" afterPath="$PROJECT_DIR$/ota/torsion/xcorr2d.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp-plot.html" beforeDir="false" afterPath="$PROJECT_DIR$/temp-plot.html" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -20,7 +16,7 @@
         <entry file="file://$PROJECT_DIR$/ota/gui/torsion_application.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="368">
-              <caret line="298" column="74" lean-forward="true" selection-start-line="298" selection-start-column="74" selection-end-line="298" selection-end-column="74" />
+              <caret line="298" column="74" selection-start-line="298" selection-start-column="74" selection-end-line="298" selection-end-column="74" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
@@ -54,8 +50,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="197">
-              <caret line="207" column="23" selection-start-line="207" selection-start-column="23" selection-end-line="207" selection-end-column="23" />
+            <state relative-caret-position="419">
+              <caret line="206" column="35" selection-start-line="206" selection-start-column="35" selection-end-line="206" selection-end-column="35" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -356,7 +352,7 @@
     <entry file="file://$PROJECT_DIR$/ota/gui/torsion_application.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="368">
-          <caret line="298" column="74" lean-forward="true" selection-start-line="298" selection-start-column="74" selection-end-line="298" selection-end-column="74" />
+          <caret line="298" column="74" selection-start-line="298" selection-start-column="74" selection-end-line="298" selection-end-column="74" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
           </folding>
@@ -372,8 +368,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="197">
-          <caret line="207" column="23" selection-start-line="207" selection-start-column="23" selection-end-line="207" selection-end-column="23" />
+        <state relative-caret-position="419">
+          <caret line="206" column="35" selection-start-line="206" selection-start-column="35" selection-end-line="206" selection-end-column="35" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>

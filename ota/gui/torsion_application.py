@@ -193,7 +193,7 @@ class OcularTorsionApplication(tk.Tk):
             segment_theta = None
 
             # TODO: pass the segment removal
-            torsion, torsion_derivative, self.polar_transform_list = tq2dx.quantify_torsion(
+            torsion, self.polar_transform_list, torsion_derivative = tq2dx.quantify_torsion(
                                                                  RADIUS,
                                                                  RESOLUTION,
                                                                  torsion_mode,
@@ -244,7 +244,7 @@ class OcularTorsionApplication(tk.Tk):
             # Extract gui state values required for the subset method
             feature_coordinates = measure_state.feature_coordinates
             # Run algo
-            torsion, torsion_derivative, self.polar_transform_list = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode,
+            torsion, self.polar_transform_list, torsion_derivative = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode,
                                                                  self.video, self.start_frame.get(),
                                                                  self.reference_frame.get(), self.end_frame.get(),
                                                                  self.pupil_list, self.blink_list,
@@ -287,7 +287,7 @@ class OcularTorsionApplication(tk.Tk):
             feature_coordinates = measure_state.feature_coordinates
             # Run the algorithm for each set of recorded feature coordinates
             for i, coords in enumerate(feature_coordinates):
-                torsion_i, torsion_derivative_i, self.polar_transform_list = tq2dx.quantify_torsion(RADIUS,
+                torsion_i, self.polar_transform_list, torsion_derivative_i = tq2dx.quantify_torsion(RADIUS,
                                                    RESOLUTION,
                                                    torsion_mode,
                                                    transform_mode,

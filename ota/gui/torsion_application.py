@@ -138,7 +138,7 @@ class OcularTorsionApplication(tk.Tk):
 
 
             # TODO: pass the segment removal
-            torsion, torsion_derivative, self.polar_transform_list = tq2dx.quantify_torsion(
+            torsion, self.polar_transform_list, torsion_derivative = tq2dx.quantify_torsion(
                                                                  RADIUS,
                                                                  RESOLUTION,
                                                                  torsion_mode,
@@ -189,7 +189,7 @@ class OcularTorsionApplication(tk.Tk):
             # Extract gui state values required for the subset method
             feature_coordinates = measure_state.feature_coordinates
             # Run algo
-            torsion, torsion_derivative, self.polar_transform_list = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode,
+            torsion, self.polar_transform_list, torsion_derivative = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode,
                                                                  self.video, self.start_frame.get(),
                                                                  self.reference_frame.get(), self.end_frame.get(),
                                                                  self.pupil_list, self.blink_list,
@@ -232,7 +232,7 @@ class OcularTorsionApplication(tk.Tk):
             feature_coordinates = measure_state.feature_coordinates
             # Run the algorithm for each set of recorded feature coordinates
             for i, coords in enumerate(feature_coordinates):
-                torsion_i, torsion_derivative_i, self.polar_transform_list = tq2dx.quantify_torsion(RADIUS,
+                torsion_i, self.polar_transform_list, torsion_derivative_i = tq2dx.quantify_torsion(RADIUS,
                                                    RESOLUTION,
                                                    torsion_mode,
                                                    transform_mode,
@@ -682,15 +682,8 @@ class MeasureTorsion(tk.Frame):
         noise_replacement_check = tk.Checkbutton(self, text="Alternate Subset and Full Iris", variable = self.AlternateFullSubset, command=lambda: [self.update()])
         noise_replacement_check.grid(row=3,column=1, sticky=tk.W)
 
-
-
         measurement_options_label = tk.Label(self, text="Measurement Options", font=LARGE_FONT)
         measurement_options_label.grid(row=4,column=0, sticky=tk.W)
-
-
-
-
-
 
         interpolation_check = tk.Checkbutton(self, text="Interpolate", variable = self.Interpolation, command=lambda: [self.Upsampling.set(not(self.Interpolation.get())), self.update()])
         interpolation_check.grid(row=5,column=0, sticky=tk.W)

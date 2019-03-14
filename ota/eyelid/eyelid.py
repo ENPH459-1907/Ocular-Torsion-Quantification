@@ -1,7 +1,6 @@
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname('.'), os.path.pardir)))
 
-import matplotlib.pyplot as plt
 import cv2
 import cProfile
 import numpy as np
@@ -108,6 +107,7 @@ def detect_eyelid(image, pupil, **kw):
     ll_x = np.array(x0 + lspace*(-b), dtype='int')
     ll_y = np.array(y0 + lspace*(a), dtype='int')
 
+
     # Only keep points of the detected lines that lie within the ROIs
     inds = reduce(np.intersect1d, ( np.where(ul_x >= 0), np.where(ul_y >= 0),
                                     np.where(ul_x <= ul_img.shape[1]-1), np.where(ul_y <= ul_img.shape[0]-1)))
@@ -172,40 +172,23 @@ def detect_eyelid(image, pupil, **kw):
     return eyelids_removed
 
 def pupil_obstruct(eyelid_mat, contour):
-    """
-    Detects if the upper and lower eyelids intersect the pupil
-
-    Parameters
-    ------------------------
-    eyelid_mat : array_like
-        An array with the same shape as image, containing 0s where there is eyelid has been detected and 1s elsewhere.
-    contour: array_like
-        Vector type object containing a list of points contained in the contour of the pupil.
-            0-index of point corresponds to column index
-            1-index of point corresponds to row index
-
-    Returns
-    ------------------------
-    intersect : 0 or 1 or None
-        If 1, eyelid intersects pupil. False otherwise.
-    """
     # If things are None, abort mission
     if eyelid_mat is None or contour is None:
         return None
 
-    # Find locations where eyelid exists
+     # Find locations where eyelid exists
     indices_zero = np.nonzero(eyelid_mat == 0)
 
-    # If there is no eyelid, just abort
+     # If there is no eyelid, just abort
     if indices_zero[0].size == 0 or indices_zero[1].size == 0:
         return True
     eyelid_locs = [(indices_zero[0][i], indices_zero[1][i]) for i in range(0, len(indices_zero))]
 
-    # Get the contour into proper form: set of tuples (row, col)
+     # Get the contour into proper form: set of tuples (row, col)
     contour = np.squeeze(contour)
     contour = [tuple(x) for x in contour]
 
-    # Find the intersection between pupil contour and eyelid locations (intersection of 4 pixels)
+     # Find the intersection between pupil contour and eyelid locations (intersection of 4 pixels)
     intersection = np.array([x for x in contour if x in eyelid_locs])
     if len(intersection) == 0:
         return 0

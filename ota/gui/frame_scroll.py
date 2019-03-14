@@ -75,6 +75,35 @@ class EyelidTracker(FrameTracker):
         self.ax.set_xlabel('Frame %s' % self.ind)
         self.im.axes.figure.canvas.draw()
 
+class PolarTransformTracker(FrameTracker):
+    """
+    Object that displays a video frame with the located eyelid overlayed. Class used by polar_transform_scroll method.
+
+    Parameters
+    ------------------------
+    ax : object containing elements of a figure
+        Used to set window title and axis labels
+
+    video : array_like
+        series of video frames
+
+    eyelid : dictionary
+        dictionary of pupils where the key is the frame index and the value is the frame with the eyelid removed.
+        Does not need to include all video frames.
+    """
+    def __init__(self, ax, video, polar_transform_list):
+        FrameTracker.__init__(self, ax, video)
+        self.polar_transform_list = polar_transform_list
+
+    def update(self):
+        display_img = self.video[self.ind]
+        if self.ind in self.polar_transform_list:
+            self.polar_transform_at_ind = self.polar_transform_list[self.ind]
+            if self.polar_transform_at_ind is not None:
+                display_img = self.polar_transform_at_ind
+        self.im.set_data(display_img)
+        self.ax.set_xlabel('Frame %s' % self.ind)
+        self.im.axes.figure.canvas.draw()
 
 class PupilTracker(FrameTracker):
     """
@@ -109,7 +138,7 @@ class PupilTracker(FrameTracker):
             self.pupil_at_ind = self.pupil_list[self.ind]
             if self.pupil_at_ind:
                 #self.pupil_circle = Circle((self.pupil_at_ind.center_col,self.pupil_at_ind.center_row),self.pupil_at_ind.radius,fill=False,ec=[1,0,0])
-                self.pupil_circle = Ellipse((self.pupil_at_ind.center_col,self.pupil_at_ind.center_row), self.pupil_at_ind.width, self.pupil_at_ind.height,fill=False,ec=[1,0,0]) 
+                self.pupil_circle = Ellipse((self.pupil_at_ind.center_col,self.pupil_at_ind.center_row), self.pupil_at_ind.major, self.pupil_at_ind.minor, angle=(self.pupil_at_ind.angle-90),fill=False,ec=[1,0,0])
                 self.pupil_center = Circle((self.pupil_at_ind.center_col,self.pupil_at_ind.center_row),int(0.1*self.pupil_at_ind.radius),fill=True,ec=[1,0,0], fc=[1,0,0])
                 self.pupil_patch = self.ax.add_patch(self.pupil_circle)
                 self.center_patch = self.ax.add_patch(self.pupil_center)
@@ -320,6 +349,12 @@ def torsion_scroll(video, pupil_list, offset_first_frame):
     '''
     fig, ax = plt.subplots(1,1)
     tracker = TorsionTracker(ax, video, pupil_list, offset_first_frame)
+    fig.canvas.mpl_connect('key_press_event', tracker.on_key)
+    plt.show()
+
+def polar_transform_scroll(video, polar_transform_list):
+    fig, ax = plt.subplots(1,1)
+    tracker = PolarTransformTracker(ax, video, polar_transform_list)
     fig.canvas.mpl_connect('key_press_event', tracker.on_key)
     plt.show()
 

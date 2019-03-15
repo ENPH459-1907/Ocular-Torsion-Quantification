@@ -2,7 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="312bda1b-7ff6-4170-b39f-9005bce5cfb2" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py" beforeDir="false" afterPath="$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ota/gui/torsion_application.py" beforeDir="false" afterPath="$PROJECT_DIR$/ota/gui/torsion_application.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ota/iris/iris.py" beforeDir="false" afterPath="$PROJECT_DIR$/ota/iris/iris.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ota/torsion/xcorr2d.py" beforeDir="false" afterPath="$PROJECT_DIR$/ota/torsion/xcorr2d.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/temp-plot.html" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -15,8 +21,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ota/gui/torsion_application.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="368">
-              <caret line="298" column="74" selection-start-line="298" selection-start-column="74" selection-end-line="298" selection-end-column="74" />
+            <state relative-caret-position="922">
+              <caret line="157" column="95" selection-start-line="157" selection-start-column="95" selection-end-line="157" selection-end-column="95" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
@@ -25,9 +31,10 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/ota/video/video.py">
+        <entry file="file://$PROJECT_DIR$/ota/iris/iris.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-486">
+            <state relative-caret-position="1725">
+              <caret line="121" column="27" selection-start-line="121" selection-start-column="27" selection-end-line="121" selection-end-column="27" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -36,13 +43,12 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/README.md">
-          <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
-            <state split_layout="SPLIT">
-              <first_editor relative-caret-position="75">
-                <caret line="5" selection-start-line="5" selection-end-line="5" />
-              </first_editor>
-              <second_editor />
+        <entry file="file://$PROJECT_DIR$/ota/video/video.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state>
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -50,8 +56,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="419">
-              <caret line="206" column="35" selection-start-line="206" selection-start-column="35" selection-end-line="206" selection-end-column="35" />
+            <state relative-caret-position="350">
+              <caret line="240" column="13" selection-start-line="240" selection-start-column="13" selection-end-line="240" selection-end-column="13" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -62,8 +68,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ota/torsion/xcorr2d.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="79">
-              <caret line="347" column="16" selection-start-line="347" selection-start-column="4" selection-end-line="347" selection-end-column="16" />
+            <state relative-caret-position="2625">
+              <caret line="180" column="19" selection-start-line="180" selection-start-column="19" selection-end-line="180" selection-end-column="19" />
             </state>
           </provider>
         </entry>
@@ -83,8 +89,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ota/pupil/pupil.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1005">
-              <caret line="74" column="53" selection-start-line="74" selection-start-column="53" selection-end-line="74" selection-end-column="53" />
+            <state relative-caret-position="90">
+              <caret line="14" column="12" selection-start-line="14" selection-start-column="12" selection-end-line="14" selection-end-column="12" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -95,8 +101,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ota/eyelid/eyelid.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3150">
-              <caret line="210" column="16" selection-start-line="210" selection-start-column="16" selection-end-line="210" selection-end-column="16" />
+            <state relative-caret-position="2760">
+              <caret line="184" column="16" selection-start-line="184" selection-start-column="16" selection-end-line="184" selection-end-column="16" />
             </state>
           </provider>
         </entry>
@@ -105,16 +111,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>quantify</find>
-      <find>FullIris</find>
-      <find>Iris Segment Bounds</find>
-      <find>segment_theta</find>
-      <find>feature_r</find>
-      <find>feature_coord</find>
-      <find>MAX_ANGLE</find>
-      <find>feature_coordinates</find>
-      <find>Segm</find>
-      <find>Alternate</find>
       <find>AlternateFullSubset</find>
       <find>no</find>
       <find>segment_removal</find>
@@ -131,10 +127,20 @@
       <find>frame_loc =</find>
       <find>start</find>
       <find>round2</find>
-      <find>self.blink_list</find>
       <find>reference_bound</find>
       <find>reduced_corr</find>
       <find>'subset'</find>
+      <find>self.Calibrate</find>
+      <find>asin</find>
+      <find>calibration_frame</find>
+      <find>'on'</find>
+      <find>calibration_angl</find>
+      <find>remap</find>
+      <find>self.blink_list[</find>
+      <find>print(</find>
+      <find>first_window</find>
+      <find>self.blink_list</find>
+      <find>Full</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -146,17 +152,18 @@
         <option value="$PROJECT_DIR$/ota/data/data.py" />
         <option value="$PROJECT_DIR$/ota/eyelid/eyelid.py" />
         <option value="$PROJECT_DIR$/ota/pupil/pupil.py" />
+        <option value="$PROJECT_DIR$/.gitignore" />
+        <option value="$PROJECT_DIR$/ota/iris/iris.py" />
         <option value="$PROJECT_DIR$/ota/torsion/xcorr2d.py" />
         <option value="$PROJECT_DIR$/ota/gui/torsion_application.py" />
         <option value="$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds">
-    <option name="x" value="647" />
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="y" value="23" />
-    <option name="width" value="1265" />
-    <option name="height" value="974" />
+    <option name="width" value="1038" />
+    <option name="height" value="710" />
   </component>
   <component name="ProjectView">
     <navigator currentView="Scope" currentSubView="Scope 'Project Files'; set:Project Files; class com.intellij.psi.search.scope.ProjectFilesScope" proportions="" version="1">
@@ -237,6 +244,24 @@
               <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
               <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
               <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+              <item name="gui" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+            </path>
+            <path>
+              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
+              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
+              <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+              <item name="iris" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+            </path>
+            <path>
+              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
+              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
+              <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+              <item name="pupil" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+            </path>
+            <path>
+              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
+              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
+              <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
               <item name="torsion" type="9f88c78c:ScopeViewTreeModel$FileNode" />
             </path>
             <path>
@@ -280,11 +305,11 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="647" y="23" width="1265" height="974" extended-state="0" />
+    <frame x="0" y="23" width="1280" height="710" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Favorites" order="0" side_tool="true" />
-      <window_info active="true" content_ui="combo" id="Project" order="1" visible="true" weight="0.15916398" />
+      <window_info active="true" content_ui="combo" id="Project" order="1" visible="true" weight="0.15726767" />
       <window_info id="Structure" order="2" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="0" />
       <window_info anchor="bottom" id="Event Log" order="1" side_tool="true" />
@@ -303,6 +328,49 @@
     </layout>
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+        <state split_layout="SPLIT">
+          <first_editor relative-caret-position="30">
+            <caret line="2" selection-start-line="2" selection-end-line="2" />
+          </first_editor>
+          <second_editor />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="555">
+          <caret line="95" lean-forward="true" selection-start-line="95" selection-end-line="95" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ota/iris/iris.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1725">
+          <caret line="121" column="27" selection-start-line="121" selection-start-column="27" selection-end-line="121" selection-end-column="27" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ota/video/video.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ota/torsion/xcorr2d.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2625">
+          <caret line="180" column="19" selection-start-line="180" selection-start-column="19" selection-end-line="180" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/ota/data/data.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="285">
@@ -315,8 +383,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/ota/pupil/pupil.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1005">
-          <caret line="74" column="53" selection-start-line="74" selection-start-column="53" selection-end-line="74" selection-end-column="53" />
+        <state relative-caret-position="90">
+          <caret line="14" column="12" selection-start-line="14" selection-start-column="12" selection-end-line="14" selection-end-column="12" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
@@ -325,51 +393,25 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/ota/eyelid/eyelid.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3150">
-          <caret line="210" column="16" selection-start-line="210" selection-start-column="16" selection-end-line="210" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/README.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
-        <state split_layout="SPLIT">
-          <first_editor relative-caret-position="75">
-            <caret line="5" selection-start-line="5" selection-end-line="5" />
-          </first_editor>
-          <second_editor />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ota/video/video.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-486">
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="2760">
+          <caret line="184" column="16" selection-start-line="184" selection-start-column="16" selection-end-line="184" selection-end-column="16" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/ota/gui/torsion_application.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="368">
-          <caret line="298" column="74" selection-start-line="298" selection-start-column="74" selection-end-line="298" selection-end-column="74" />
+        <state relative-caret-position="922">
+          <caret line="157" column="95" selection-start-line="157" selection-start-column="95" selection-end-line="157" selection-end-column="95" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ota/torsion/xcorr2d.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="79">
-          <caret line="347" column="16" selection-start-line="347" selection-start-column="4" selection-end-line="347" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="419">
-          <caret line="206" column="35" selection-start-line="206" selection-start-column="35" selection-end-line="206" selection-end-column="35" />
+        <state relative-caret-position="350">
+          <caret line="240" column="13" selection-start-line="240" selection-start-column="13" selection-end-line="240" selection-end-column="13" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>

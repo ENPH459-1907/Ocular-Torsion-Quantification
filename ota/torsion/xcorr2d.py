@@ -177,6 +177,9 @@ def xcorr2d(
     # set the window length, shifts and start given the method
     method = ''
 
+    if reference_window is None or iris_seg is None:
+        return None
+
     # FULL METHOD
     if reference_window.shape[1] > iris_seg.shape[1]:
         method = 'full'

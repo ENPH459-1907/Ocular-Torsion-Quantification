@@ -130,65 +130,11 @@ class OcularTorsionApplication(tk.Tk):
             upper_iris = None
             lower_iris = None
 
-        '''
-        if measure_state.AlternateFullSubset.get():
-            transform_mode = 'alternate'
-            feature_coordinates = measure_state.feature_coordinates
-            window_theta = measure_state.window_theta.get()
-            segment_theta = measure_state.segment_theta.get()
-
-            # TODO: pass the segment removal
-            torsion, torsion_derivative = tq2dx.quantify_torsion(RADIUS,
-                                                                 RESOLUTION,
-                                                                 torsion_mode,
-                                                                 transform_mode,
-                                                                 self.video,
-                                                                 self.start_frame.get(),
-                                                                 self.reference_frame.get(),
-                                                                 self.end_frame.get(),
-                                                                 self.pupil_list,
-                                                                 self.blink_list,
-                                                                 self.pupil_threshold.get(),
-                                                                 measure_state.AlternateFullSubset.get(),
-                                                                 upper_iris=upper_iris,
-                                                                 lower_iris=lower_iris,
-                                                                 WINDOW_THETA=window_theta,
-                                                                 SEGMENT_THETA=segment_theta,
-                                                                 feature_coords=feature_coordinates[0])
-            # Construct metadata
-            metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
-                       {"torsion_mode": torsion_mode, "transform_mode": transform_mode,
-                        "replace_status": replace_status, "radial_thickness": measure_state.radial_thickness.get(),
-                        "video_path": self.video_path.get(), "video_fps": self.video.fps}
-            metadata_dict = {'Mode': torsion_mode,
-                             'Iris': transform_mode,
-                             'Replace': replace_status,
-                             'Thickness': measure_state.radial_thickness.get(),
-                             'Video': self.video_path.get(),
-                             'VIDEO_FPS': self.video.fps,
-                             'REFERENCE_FRAME': self.reference_frame.get()}
-            # Construct legend entry, which is a subset of the metadata
-            legend_entry = 'Mode-%(torsion_mode)s_Iris-%(transform_mode)s_%(replace_status)s' % \
-                           {"torsion_mode": torsion_mode, "transform_mode": transform_mode,
-                            "replace_status": replace_status}
-            # Append torsion to the list as a tuple with the first element the results, second element as the metadata, third element as the legend entry
-            self.torsion.append((torsion, metadata, legend_entry))
-            self.torsion_derivative.append((torsion_derivative, metadata, legend_entry))
-
-            # Initialize data object and append it to session list
-            data = dat.Data(name=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), path=self.save_path.get())
-            torsion_data = [torsion_data[1] for torsion_data in torsion.items()]
-            data.set(torsion=torsion_data, start_frame=self.start_frame.get(), pupil_list=self.pupil_list,
-                     metadata=metadata_dict)
-            self.data.append(data)
-            print('done')
-        '''
         # Determine if the user wants to run 2D correlation on the whole iris
         if measure_state.Fulliris.get():
             # Set the transform mode and quantify torsion
             # TODO: Pass the blinks list in here
             transform_mode = 'full'
-            feature_coordinates = [None]
             window_theta = None
             segment_theta = None
 
@@ -210,9 +156,8 @@ class OcularTorsionApplication(tk.Tk):
                                                                  lower_iris = lower_iris,
                                                                  WINDOW_THETA = window_theta,
                                                                  SEGMENT_THETA = segment_theta,
-                                                                 feature_coords = feature_coordinates[0],
                                                                  calibration_frame = (measure_state.calibration_frame.get() if measure_state.Calibrate.get() else None),
-                calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None))
+                                                                 calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None))
 
             # Construct metadata
             metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
@@ -254,8 +199,8 @@ class OcularTorsionApplication(tk.Tk):
                                                                  WINDOW_THETA=measure_state.window_theta.get(),
                                                                  SEGMENT_THETA=measure_state.segment_theta.get(),
                                                                  feature_coords = feature_coordinates[0],
-                                                                 calibration_frame = (measure_state.calibration_frame.get() if self.Calibrate.get() else None),
-                    calibration_angle = (measure_state.calibration_angle.get() if self.Calibrate.get() else None))
+                                                                 calibration_frame = (measure_state.calibration_frame.get() if measure_state.Calibrate.get() else None), #Should it be self?
+                                                                 calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None))
             # Construct metadata
             metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status, "radial_thickness": measure_state.radial_thickness.get(), "video_path": self.video_path.get(),"video_fps": self.video.fps}
@@ -302,8 +247,8 @@ class OcularTorsionApplication(tk.Tk):
                                                    WINDOW_THETA = measure_state.window_theta.get(),
                                                    SEGMENT_THETA = measure_state.segment_theta.get(),
                                                    feature_coords = coords,
-                                                   calibration_frame = (measure_state.calibration_frame.get() if self.Calibrate.get() else None),
-                    calibration_angle = (measure_state.calibration_angle.get() if self.Calibrate.get() else None))
+                                                   calibration_frame = (measure_state.calibration_frame.get() if measure_state.Calibrate.get() else None),
+                    calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None))
 
 
                 # Construct metadata
@@ -439,12 +384,6 @@ class OcularTorsionApplication(tk.Tk):
 
         # Plot rotation from reference to previous frame
         for (result, metadata, legend_entry) in self.torsion_derivative:
-            x_i, y_i = zip(*result.items())
-            trace = go.Scatter(x=x_i, y=y_i, name=legend_entry)
-            fig.append_trace(trace, 1, 1)
-
-        # Plot rotation from reference to previous frame
-        for (result, metadata, legend_entry) in self.torsion_derivative:
 
             x_i, y_i = zip(*result.items())
             trace = go.Scatter(x=x_i, y=y_i, name=legend_entry)
@@ -489,17 +428,8 @@ class OcularTorsionApplication(tk.Tk):
                         self.eyelid_list[frame_loc] = None
                         self.blink_list[frame_loc] = None
 
-                #try something
-                self.blink_list[60] = 1
-                self.blink_list[61] = 1
-                self.blink_list[62] = 1
-                self.blink_list[63] = 1
-                self.blink_list[64] = 1
-                self.blink_list[65] = 1
-                self.blink_list[66] = 1
-                self.blink_list[67] = 1
-                self.blink_list[68] = 1
-                self.blink_list[69] = 1
+            self.blink_list[60] = 1
+
 
     def identify_blinks(self):
         '''
@@ -694,6 +624,7 @@ class MeasureTorsion(tk.Frame):
 
         # Run both subset and full iris
         self.FullandSubset = tk.IntVar()
+
         # Run subset and Full iris alternatively
         self.AlternateFullSubset = tk.IntVar()
 

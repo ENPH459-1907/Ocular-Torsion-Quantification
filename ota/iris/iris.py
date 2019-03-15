@@ -42,6 +42,11 @@ def iris_transform(
         polar_iris - opencv image (numpy array) of extracted iris in polar coordinates
         cartesian_iris - opencv image (numpy array) of extracted iris in cartesian coordinates
     '''
+    # If no pupil can be found, then just skip everything
+    if pupil is None:
+        print('fuck')
+        return None
+
     inner_radius_buffer = 5
     min_radius = int(pupil.major/2) + inner_radius_buffer
     max_radius = min_radius + int(iris_thickness)
@@ -99,18 +104,22 @@ def iris_transform(
             map_x = np.zeros((n_radius, n_theta), dtype=np.float32)
             map_y = np.zeros((n_radius, n_theta), dtype=np.float32)
 
-            for r in range(min_radius,max_radius,r_resolution):
-                for a in range(theta_window[0],theta_window[1],theta_resolution):
-                    phi = phi0 + asin(r * cos(a * pi / 180) / r_eye)
-                    theta = theta0 - asin(r * sin(a * pi / 180) / r_eye)
-                    x_loc = reference_pupil.center_col + r_eye * sin(phi)
-                    y_loc = reference_pupil.center_row + r_eye * sin(theta)
-                    #frame[min(y_loc, frame.shape[0]-1)][min(x_loc, frame.shape[1]-1)] = 0
-                    map_x[((r - min_radius)/r_resolution, (a - theta_window[0])/theta_resolution)] = x_loc
-                    map_y[((r - min_radius)/r_resolution, (a - theta_window[0])/theta_resolution)] = y_loc
-
-            geometric_corrected_iris = remap(frame, map_x, map_y, INTER_LINEAR)
-            return geometric_corrected_iris
+            # TODO: r * cos(a * pi / 180) / r_eye sometimes give a value outside [-1,1], asin is invalid
+            try:
+                for r in range(min_radius,max_radius,r_resolution):
+                    for a in range(theta_window[0],theta_window[1],theta_resolution):
+                        phi = phi0 + asin(r * cos(a * pi / 180) / r_eye)
+                        theta = theta0 - asin(r * sin(a * pi / 180) / r_eye)
+                        x_loc = reference_pupil.center_col + r_eye * sin(phi)
+                        y_loc = reference_pupil.center_row + r_eye * sin(theta)
+                        #frame[min(y_loc, frame.shape[0]-1)][min(x_loc, frame.shape[1]-1)] = 0
+                        map_x[((r - min_radius)/r_resolution, (a - theta_window[0])/theta_resolution)] = x_loc
+                        map_y[((r - min_radius)/r_resolution, (a - theta_window[0])/theta_resolution)] = y_loc
+                geometric_corrected_iris = remap(frame, map_x, map_y, INTER_LINEAR)
+                return geometric_corrected_iris
+            except:
+                print('Something bad happened in angle calculations')
+                return None
     else:
         # TODO throw exception
         print('Mode not supported')

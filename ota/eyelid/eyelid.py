@@ -47,6 +47,7 @@ def detect_eyelid(image, pupil, **kw):
     # Defined the image indices representing four regions of interest about the eye
     l_cols = (int(pupil.center_col - (pupil.radius + ROI_STRIP_WIDTH)), int(pupil.center_col - (pupil.radius + ROI_BUFFER)) )
     r_cols = (int(pupil.center_col + (pupil.radius + ROI_BUFFER)), int(pupil.center_col + (pupil.radius + ROI_STRIP_WIDTH)))
+
     u_rows = (0, int(pupil.center_row - ROI_BUFFER))
     l_rows = (int(pupil.center_row + ROI_BUFFER), image.shape[0])
 

@@ -21,7 +21,7 @@ def quantify_torsion(
     pupil_list,
     blink_list,
     threshold,
-    alternate = None,
+    alternate = False,
     WINDOW_THETA = None,
     SEGMENT_THETA = None,
     upper_iris = None,
@@ -203,9 +203,7 @@ def quantify_torsion(
             lower_occlusion_theta = (-90 - np.absolute(lower_iris_theta - 270), -90 + np.absolute(lower_iris_theta - 270))
 
         # replace occluded sections with noise
-        first_window = eyelid_removal.noise_replace(first_window, upper_occlusion_theta, lower_occlusion_theta)
-    # TODO: Add a button to show iris segments
-
+        first_window = eyelid_removal.noise_replace_eyelid(first_window)
     torsion = {}
     torsion_derivative = {}
     transformed_iris = {}
@@ -254,7 +252,7 @@ def quantify_torsion(
                 else:
                     if noise_replace:
                         # replace occluded sections with noise
-                        current_frame = eyelid_removal.noise_replace(current_frame, upper_occlusion_theta, lower_occlusion_theta)
+                        current_frame = eyelid_removal.noise_replace_eyelid(current_frame)
                     # get the degree of rotation of the current frame based on reference frame
                     deg = xcorr2d.xcorr2d(current_frame,
                         first_window,

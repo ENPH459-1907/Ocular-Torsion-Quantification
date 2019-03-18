@@ -44,7 +44,6 @@ def iris_transform(
     '''
     # If no pupil can be found, then just skip everything
     if pupil is None:
-        print('fuck')
         return None
 
     inner_radius_buffer = 5

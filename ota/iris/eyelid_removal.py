@@ -36,6 +36,24 @@ def noise_replace(iris, upper_occlusion_theta, lower_occlusion_theta):
     iris[:,lower_lid_min:lower_lid_max] = lower_noise
     return iris
 
+def noise_replace_eyelid(iris):
+    '''
+    Replaces portions of the iris with that are covered by masks.
+
+    Input:
+        iris - numpy array of pixel intensities of transformed iris.
+
+    Output:
+        iris - numpy array of pixel intensities of transformed iris with desired
+               portions replaced with noise.
+    '''
+    # find mean iris intensity and use it to construct noise with same mean.
+    normalized_magnitude = (np.sum(iris)/iris.size)
+
+    loc = (iris == 0)
+    iris[loc] = normalized_magnitude
+    return iris
+
 def iris_extension(iris, theta_resolution, lower_theta = 0, upper_theta = 0):
     '''
     Extends the iris by inserting portions of the iris before zero at the beginning and appending

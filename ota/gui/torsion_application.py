@@ -151,7 +151,7 @@ class OcularTorsionApplication(tk.Tk):
                                                                  self.pupil_list,
                                                                  self.blink_list,
                                                                  self.pupil_threshold.get(),
-                                                                 measure_state.AlternateFullSubset.get(),
+                                                                 alternate=False,
                                                                  upper_iris = upper_iris,
                                                                  lower_iris = lower_iris,
                                                                  WINDOW_THETA = window_theta,
@@ -192,7 +192,7 @@ class OcularTorsionApplication(tk.Tk):
                                                                  self.reference_frame.get(), self.end_frame.get(),
                                                                  self.pupil_list, self.blink_list,
                                                                  self.pupil_threshold.get(),
-                                                                 measure_state.AlternateFullSubset.get(),
+                                                                 alternate=True,
                                                                  upper_iris=upper_iris, lower_iris=lower_iris,
                                                                  WINDOW_THETA=measure_state.window_theta.get(),
                                                                  SEGMENT_THETA=measure_state.segment_theta.get(),
@@ -429,24 +429,8 @@ class OcularTorsionApplication(tk.Tk):
         If it is a blink, insert 1. If not blink, insert 0. Else, None.
         Print blink locations
         '''
-        '''
-        if self.pupil_list and self.eyelid_list:
-            self.blink_list = {}
-            for i, frame in tqdm(enumerate(self.video[self.start_frame.get():self.end_frame.get()])):
-                frame_loc = i + self.start_frame.get()
-                # check if a pupil exists
-                if not self.pupil_list[frame_loc]:
-                    self.blink_list[frame_loc] = None
-                else:
-                    try:
-                        self.blink_list[frame_loc] = eyelid.pupil_obstruct(self.eyelid_list[frame_loc], self.pupil_list[frame_loc].contour)
-                    except:
-                        self.blink_list[frame_loc] = None
-                        print("double RIP")
-        '''
         # Search for indices where there is a blink or a None -- pupil/eyelid not found
         filtered_blinks = {k: v for k, v in self.blink_list.items() if v is None or v == 1}
-        #print(self.blink_list)
         print('Blinks occur at frames: ')
         print(str(filtered_blinks.keys()))
 

@@ -265,7 +265,7 @@ def quantify_torsion(
                         threshold=0,
                         max_angle=pre.MAX_ANGLE)
 
-                    if i > 0:
+                    try:
                         previous_window = transformed_iris[frame_loc - 1]
                         if previous_window is None:
                             previous_deg = None
@@ -284,12 +284,12 @@ def quantify_torsion(
                             resolution=RESOLUTION,
                             threshold=0,
                             max_angle=pre.MAX_ANGLE)
-                    else:
+                    except:
                         previous_deg = None
             except:
                 deg = None
-        previous_deg = None
+        #previous_deg = None
         torsion[frame_loc] = deg
         torsion_derivative[frame_loc] = previous_deg
         transformed_iris[frame_loc] = current_frame
-    return torsion, torsion_derivative, transformed_iris
+    return torsion, transformed_iris, torsion_derivative

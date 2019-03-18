@@ -191,7 +191,6 @@ def xcorr2d(
 
         # force max_angle to be
         if max_angle != abs(start):
-            print(start, max_angle)
             print('WARNING: 2 * Max angle ({}) does not equal the total amount of extended degres to the reference window ({})'.format(2 * max_angle,  WINDOW_SHIFTS))
             max_angle = start
     # SUBSET METHOD

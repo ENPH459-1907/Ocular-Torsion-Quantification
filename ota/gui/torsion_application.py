@@ -17,6 +17,7 @@ import datetime
 from plotly.offline import plot
 import plotly.graph_objs as go
 import plotly.tools as tools
+from plotly.colors import DEFAULT_PLOTLY_COLORS
 
 # OTA tools
 from ota.gui import coord_click as clk
@@ -84,7 +85,6 @@ class OcularTorsionApplication(tk.Tk):
         self.data = []
 
         self.torsion = []
-        self.torsion_derivative = []
 
         # Dictionary to store all the frames (pages) in the UI
         self.frames = {}
@@ -158,7 +158,6 @@ class OcularTorsionApplication(tk.Tk):
                                                                  SEGMENT_THETA = segment_theta,
                                                                  calibration_frame = (measure_state.calibration_frame.get() if measure_state.Calibrate.get() else None),
                                                                  calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None))
-
             # Construct metadata
             metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status, "radial_thickness": measure_state.radial_thickness.get(), "video_path": self.video_path.get(),"video_fps": self.video.fps}
@@ -173,8 +172,7 @@ class OcularTorsionApplication(tk.Tk):
             legend_entry = 'Mode-%(torsion_mode)s_Iris-%(transform_mode)s_%(replace_status)s' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status}
             # Append torsion to the list as a tuple with the first element the results, second element as the metadata, third element as the legend entry
-            self.torsion.append((torsion, metadata, legend_entry))
-            self.torsion_derivative.append((torsion_derivative, metadata, legend_entry))
+            self.torsion.append((torsion, torsion_derivative, metadata, legend_entry))
 
             # Initialize data object and append it to session list
             data = dat.Data(name=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),path=self.save_path.get())
@@ -215,8 +213,7 @@ class OcularTorsionApplication(tk.Tk):
             legend_entry = 'Mode-%(torsion_mode)s_Iris-%(transform_mode)s_%(replace_status)s' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status}
             # Append torsion to the list as a tuple with the first element the results, second element as the metadata, third element as the legend entry
-            self.torsion.append((torsion, metadata, legend_entry))
-            self.torsion_derivative.append((torsion_derivative, metadata, legend_entry))
+            self.torsion.append((torsion, torsion_derivative, metadata, legend_entry))
 
             # Initialize data object and append it to session list
             data = dat.Data(name=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),path=self.save_path.get())
@@ -267,8 +264,7 @@ class OcularTorsionApplication(tk.Tk):
                 legend_entry = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, Feature Number: %(feature_num)d' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "feature_num": (i+1)}
                 # Append torsion to the list as a tuple with the first element the results, second element as the metadata, third element as the legend entry
-                self.torsion.append((torsion_i, metadata_dict, legend_entry))
-                self.torsion_derivative.append((torsion_derivative_i, metadata_dict, legend_entry))
+                self.torsion.append((torsion_i, torsion_derivative_i, metadata_dict, legend_entry))
 
                 # Initialize data object and append it to session list
                 data = dat.Data(name=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),path=self.save_path.get())
@@ -377,16 +373,14 @@ class OcularTorsionApplication(tk.Tk):
                                   subplot_titles=('Rotation Angle Compared to Reference Frame', 'Rotation Angle Compared to Previous Frame'))
 
         # Plot rotation from reference to reference frame
-        for (result, metadata, legend_entry) in self.torsion:
-            x_i, y_i = zip(*result.items())
-            trace = go.Scatter(x=x_i, y=y_i, name=legend_entry)
+        for index, vals in enumerate(self.torsion):
+            (torsion, torsion_derivative, metadata, legend_entry) = vals
+            #index = self.torsion.index((torsion, torsion_derivative, metadata, legend_entry))
+            x_i, y_i = zip(*torsion.items())
+            dx_i, dy_i = zip(*torsion_derivative.items())
+            trace = go.Scatter(x=x_i, y=y_i, name=legend_entry, marker=dict(color=DEFAULT_PLOTLY_COLORS[index]))
             fig.append_trace(trace, 1, 1)
-
-        # Plot rotation from reference to previous frame
-        for (result, metadata, legend_entry) in self.torsion_derivative:
-
-            x_i, y_i = zip(*result.items())
-            trace = go.Scatter(x=x_i, y=y_i, name=legend_entry)
+            trace = go.Scatter(x=dx_i, y=dy_i, name=legend_entry, marker=dict(color=DEFAULT_PLOTLY_COLORS[index]), showlegend=False)
             fig.append_trace(trace, 2, 1)
 
         # Customize titles
@@ -427,8 +421,6 @@ class OcularTorsionApplication(tk.Tk):
                     except:
                         self.eyelid_list[frame_loc] = None
                         self.blink_list[frame_loc] = None
-
-            self.blink_list[60] = 1
 
 
     def identify_blinks(self):
@@ -529,7 +521,7 @@ class StartPage(tk.Frame):
         scroll_eyelids_button.grid(row=9,column=1)
 
         identify_blinks_button = tk.Button(self, text="Identify Blinks", command=lambda: controller.identify_blinks())
-        identify_blinks_button.grid(row=10,column=0,sticky=tk.W)
+        identify_blinks_button.grid(row=9,column=2,sticky=tk.W)
 
 
 class MeasureTorsion(tk.Frame):

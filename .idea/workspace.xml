@@ -2,13 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="312bda1b-7ff6-4170-b39f-9005bce5cfb2" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py" beforeDir="false" afterPath="$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ota/gui/torsion_application.py" beforeDir="false" afterPath="$PROJECT_DIR$/ota/gui/torsion_application.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ota/iris/iris.py" beforeDir="false" afterPath="$PROJECT_DIR$/ota/iris/iris.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ota/torsion/xcorr2d.py" beforeDir="false" afterPath="$PROJECT_DIR$/ota/torsion/xcorr2d.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/temp-plot.html" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -18,11 +14,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/ota/gui/torsion_application.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="922">
-              <caret line="157" column="95" selection-start-line="157" selection-start-column="95" selection-end-line="157" selection-end-column="95" />
+            <state relative-caret-position="240">
+              <caret line="266" column="99" selection-start-line="266" selection-start-column="99" selection-end-line="266" selection-end-column="99" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
@@ -53,11 +49,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="350">
-              <caret line="240" column="13" selection-start-line="240" selection-start-column="13" selection-end-line="240" selection-end-column="13" />
+            <state relative-caret-position="422">
+              <caret line="266" selection-start-line="266" selection-end-line="266" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -66,10 +62,19 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/ota/torsion/manual.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="687">
+              <caret line="61" column="34" selection-start-line="61" selection-start-column="34" selection-end-line="61" selection-end-column="34" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ota/torsion/xcorr2d.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2625">
-              <caret line="180" column="19" selection-start-line="180" selection-start-column="19" selection-end-line="180" selection-end-column="19" />
+            <state relative-caret-position="397">
+              <caret line="211" column="16" selection-start-line="211" selection-start-column="16" selection-end-line="211" selection-end-column="16" />
             </state>
           </provider>
         </entry>
@@ -102,7 +107,7 @@
         <entry file="file://$PROJECT_DIR$/ota/eyelid/eyelid.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="2760">
-              <caret line="184" column="16" selection-start-line="184" selection-start-column="16" selection-end-line="184" selection-end-column="16" />
+              <caret line="185" column="16" selection-start-line="185" selection-start-column="16" selection-end-line="185" selection-end-column="16" />
             </state>
           </provider>
         </entry>
@@ -111,16 +116,10 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>AlternateFullSubset</find>
-      <find>no</find>
-      <find>segment_removal</find>
-      <find>'no</find>
-      <find>.shape</find>
       <find>torsion_mode</find>
       <find>SegmentRemoval</find>
       <find>segment</find>
       <find>hihihi</find>
-      <find>print</find>
       <find>blink</find>
       <find>self.video</find>
       <find>enter</find>
@@ -141,6 +140,12 @@
       <find>first_window</find>
       <find>self.blink_list</find>
       <find>Full</find>
+      <find>plot</find>
+      <find>plot_torsion</find>
+      <find>torsion_derivative</find>
+      <find>print</find>
+      <find>plot_</find>
+      <find>self.torsion_derivative</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -154,22 +159,49 @@
         <option value="$PROJECT_DIR$/ota/pupil/pupil.py" />
         <option value="$PROJECT_DIR$/.gitignore" />
         <option value="$PROJECT_DIR$/ota/iris/iris.py" />
+        <option value="$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py" />
         <option value="$PROJECT_DIR$/ota/torsion/xcorr2d.py" />
         <option value="$PROJECT_DIR$/ota/gui/torsion_application.py" />
-        <option value="$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds">
     <option name="y" value="23" />
-    <option name="width" value="1038" />
-    <option name="height" value="710" />
+    <option name="width" value="1045" />
+    <option name="height" value="975" />
   </component>
   <component name="ProjectView">
     <navigator currentView="Scope" currentSubView="Scope 'Project Files'; set:Project Files; class com.intellij.psi.search.scope.ProjectFilesScope" proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope">
+        <subPane subId="Scope 'Project Files'; set:Project Files; class com.intellij.psi.search.scope.ProjectFilesScope">
+          <expand>
+            <path>
+              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
+              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
+            </path>
+            <path>
+              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
+              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
+              <item name="doc" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+            </path>
+            <path>
+              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
+              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
+              <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+            </path>
+            <path>
+              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
+              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
+              <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+              <item name="torsion" type="9f88c78c:ScopeViewTreeModel$FileNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -222,58 +254,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope">
-        <subPane subId="Scope 'Project Files'; set:Project Files; class com.intellij.psi.search.scope.ProjectFilesScope">
-          <expand>
-            <path>
-              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
-              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
-            </path>
-            <path>
-              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
-              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
-              <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-            </path>
-            <path>
-              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
-              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
-              <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-              <item name="data" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-            </path>
-            <path>
-              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
-              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
-              <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-              <item name="gui" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-            </path>
-            <path>
-              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
-              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
-              <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-              <item name="iris" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-            </path>
-            <path>
-              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
-              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
-              <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-              <item name="pupil" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-            </path>
-            <path>
-              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
-              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
-              <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-              <item name="torsion" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-            </path>
-            <path>
-              <item name="Ocular-Torsion-Quantification" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
-              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
-              <item name="ota" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-              <item name="video" type="9f88c78c:ScopeViewTreeModel$FileNode" />
-            </path>
-          </expand>
-          <select />
-        </subPane>
-      </pane>
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -305,11 +285,11 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="1280" height="710" extended-state="6" />
+    <frame x="0" y="23" width="1045" height="975" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Favorites" order="0" side_tool="true" />
-      <window_info active="true" content_ui="combo" id="Project" order="1" visible="true" weight="0.15726767" />
+      <window_info active="true" content_ui="combo" id="Project" order="1" visible="true" weight="0.16796875" />
       <window_info id="Structure" order="2" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="0" />
       <window_info anchor="bottom" id="Event Log" order="1" side_tool="true" />
@@ -364,13 +344,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ota/torsion/xcorr2d.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2625">
-          <caret line="180" column="19" selection-start-line="180" selection-start-column="19" selection-end-line="180" selection-end-column="19" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ota/data/data.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="285">
@@ -394,26 +367,33 @@
     <entry file="file://$PROJECT_DIR$/ota/eyelid/eyelid.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2760">
-          <caret line="184" column="16" selection-start-line="184" selection-start-column="16" selection-end-line="184" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ota/gui/torsion_application.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="922">
-          <caret line="157" column="95" selection-start-line="157" selection-start-column="95" selection-end-line="157" selection-end-column="95" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
+          <caret line="185" column="16" selection-start-line="185" selection-start-column="16" selection-end-line="185" selection-end-column="16" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/ota/execution/torsion_quant_2DX.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="350">
-          <caret line="240" column="13" selection-start-line="240" selection-start-column="13" selection-end-line="240" selection-end-column="13" />
+        <state relative-caret-position="422">
+          <caret line="266" selection-start-line="266" selection-end-line="266" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ota/torsion/xcorr2d.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="397">
+          <caret line="211" column="16" selection-start-line="211" selection-start-column="16" selection-end-line="211" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ota/gui/torsion_application.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="240">
+          <caret line="266" column="99" selection-start-line="266" selection-start-column="99" selection-end-line="266" selection-end-column="99" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
           </folding>
         </state>
       </provider>

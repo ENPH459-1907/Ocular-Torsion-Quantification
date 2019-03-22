@@ -173,6 +173,22 @@ def detect_eyelid(image, pupil, **kw):
     return eyelids_removed
 
 def pupil_obstruct(eyelid_mat, contour):
+    """
+    Determine if the pupil is obstructed (ie. blinks)
+
+    Parameters
+    ------------------------
+    eyelid_mat : array_like
+        An image with the eyelids removed
+        
+    contour: array_like
+        The contour of the pupil of the eye.
+
+    Returns
+    ------------------------
+    pupil_obstructed : int
+        1 if the pupil is obstructed. 0 if not.
+    """
     # If things are None, abort mission
     if eyelid_mat is None or contour is None:
         return None

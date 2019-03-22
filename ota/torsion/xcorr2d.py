@@ -141,18 +141,6 @@ def xcorr2d(
 
     corrs = []
 
-    # Interpolation:
-    # threshold = 0.4
-    # resolution = 0.01
-
-    # TODO kwargs?
-    # WINDOW_LENGTH : int, default = len(first_window)
-    #     The length of the window or the number of columns of the window.
-    #
-    # WINDOW_SHIFTS : int, default = len(iris_seg) - WINDOW_LENGTH
-    #     The maximum number of shifts of the window to fully cover
-    #     the iris segment.
-
     # constants
     WINDOW_SHIFTS = 0
     WINDOW_LENGTH = 0
@@ -279,18 +267,6 @@ def corr_interp(x, y, start, interp_resolution, kind='quadratic'):
     deg : float
         The amount of rotation after interpolation.
     '''
-
-    # get a list of correlation values between the maximum allowed rotation
-    # only include values above the threshold value
-    # lb = 0
-    # ub = 0
-    # if start < max_angle:
-    #     lb = start - max_angle
-    #     ub = start + max_angle
-    # else:
-    #     lb = 2 * max_angle
-    #     ub = 0
-    # x, y = reduced_corr(corrs, start - max_angle, start + max_angle, threshold)
 
     if len(y) <= 3:
         raise LackingInterpPoints('Only have {} points. Need at least 4.'.format(len(y)))

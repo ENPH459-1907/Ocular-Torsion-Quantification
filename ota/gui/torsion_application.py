@@ -139,25 +139,24 @@ class OcularTorsionApplication(tk.Tk):
             segment_theta = None
 
             # TODO: pass the segment removal
-            torsion, self.polar_transform_list, torsion_derivative = tq2dx.quantify_torsion(
-                                                                 RADIUS,
-                                                                 RESOLUTION,
-                                                                 torsion_mode,
-                                                                 transform_mode,
-                                                                 self.video,
-                                                                 self.start_frame.get(),
-                                                                 self.reference_frame.get(),
-                                                                 self.end_frame.get(),
-                                                                 self.pupil_list,
-                                                                 self.blink_list,
-                                                                 self.pupil_threshold.get(),
-                                                                 alternate=False,
-                                                                 upper_iris = upper_iris,
-                                                                 lower_iris = lower_iris,
-                                                                 WINDOW_THETA = window_theta,
-                                                                 SEGMENT_THETA = segment_theta,
-                                                                 calibration_frame = (measure_state.calibration_frame.get() if measure_state.Calibrate.get() else None),
-                                                                 calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None))
+            torsion, torsion_derivative, self.polar_transform_list = tq2dx.quantify_torsion(RADIUS,
+                RESOLUTION,
+                torsion_mode,
+                transform_mode,
+                self.video,
+                self.start_frame.get(),
+                self.reference_frame.get(),
+                self.end_frame.get(),
+                self.pupil_list,
+                self.blink_list,
+                self.pupil_threshold.get(),
+                upper_iris = upper_iris,
+                lower_iris = lower_iris,
+                WINDOW_THETA = window_theta,
+                SEGMENT_THETA = segment_theta,
+                calibration_frame = (measure_state.calibration_frame.get() if measure_state.Calibrate.get() else None),
+                calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None))
+
             # Construct metadata
             metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status, "radial_thickness": measure_state.radial_thickness.get(), "video_path": self.video_path.get(),"video_fps": self.video.fps}
@@ -187,18 +186,22 @@ class OcularTorsionApplication(tk.Tk):
             # Extract gui state values required for the subset method
             feature_coordinates = measure_state.feature_coordinates
             # Run algo
-            torsion, self.polar_transform_list, torsion_derivative = tq2dx.quantify_torsion(RADIUS, RESOLUTION, torsion_mode, transform_mode,
-                                                                 self.video, self.start_frame.get(),
-                                                                 self.reference_frame.get(), self.end_frame.get(),
-                                                                 self.pupil_list, self.blink_list,
-                                                                 self.pupil_threshold.get(),
-                                                                 alternate=True,
-                                                                 upper_iris=upper_iris, lower_iris=lower_iris,
-                                                                 WINDOW_THETA=measure_state.window_theta.get(),
-                                                                 SEGMENT_THETA=measure_state.segment_theta.get(),
-                                                                 feature_coords = feature_coordinates[0],
-                                                                 calibration_frame = (measure_state.calibration_frame.get() if measure_state.Calibrate.get() else None), #Should it be self?
-                                                                 calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None))
+            torsion, torsion_derivative, self.polar_transform_list = tq2dx.quantify_torsion(RADIUS,
+                RESOLUTION,
+                torsion_mode,
+                transform_mode,
+                self.video, self.start_frame.get(),
+                self.reference_frame.get(),
+                self.end_frame.get(),
+                self.pupil_list, self.blink_list,
+                self.pupil_threshold.get(),
+                upper_iris=upper_iris,
+                lower_iris=lower_iris,
+                WINDOW_THETA=measure_state.window_theta.get(),
+                SEGMENT_THETA=measure_state.segment_theta.get(),
+                feature_coords = feature_coordinates[0],
+                calibration_frame = (measure_state.calibration_frame.get() if measure_state.Calibrate.get() else None), #Should it be self?
+                calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None))
             # Construct metadata
             metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
                             {"torsion_mode": torsion_mode, "transform_mode": transform_mode, "replace_status": replace_status, "radial_thickness": measure_state.radial_thickness.get(), "video_path": self.video_path.get(),"video_fps": self.video.fps}
@@ -229,22 +232,21 @@ class OcularTorsionApplication(tk.Tk):
             feature_coordinates = measure_state.feature_coordinates
             # Run the algorithm for each set of recorded feature coordinates
             for i, coords in enumerate(feature_coordinates):
-                torsion_i, self.polar_transform_list, torsion_derivative_i = tq2dx.quantify_torsion(RADIUS,
-                                                   RESOLUTION,
-                                                   torsion_mode,
-                                                   transform_mode,
-                                                   self.video,
-                                                   self.start_frame.get(),
-                                                   self.reference_frame.get(),
-                                                   self.end_frame.get(),
-                                                   self.pupil_list,
-                                                   self.blink_list,
-                                                   self.pupil_threshold.get(),
-                                                   alternate=False,
-                                                   WINDOW_THETA = measure_state.window_theta.get(),
-                                                   SEGMENT_THETA = measure_state.segment_theta.get(),
-                                                   feature_coords = coords,
-                                                   calibration_frame = (measure_state.calibration_frame.get() if measure_state.Calibrate.get() else None),
+                torsion_i, torsion_derivative_i, self.polar_transform_list = tq2dx.quantify_torsion(RADIUS,
+                    RESOLUTION,
+                    torsion_mode,
+                    transform_mode,
+                    self.video,
+                    self.start_frame.get(),
+                    self.reference_frame.get(),
+                    self.end_frame.get(),
+                    self.pupil_list,
+                    self.blink_list,
+                    self.pupil_threshold.get(),
+                    WINDOW_THETA = measure_state.window_theta.get(),
+                    SEGMENT_THETA = measure_state.segment_theta.get(),
+                    feature_coords = coords,
+                    calibration_frame = (measure_state.calibration_frame.get() if measure_state.Calibrate.get() else None),
                     calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None))
 
 
@@ -413,11 +415,7 @@ class OcularTorsionApplication(tk.Tk):
                 else:
                     try:
                         self.eyelid_list[frame_loc] = eyelid.detect_eyelid(frame, self.pupil_list[frame_loc])
-                        try:
-                            self.blink_list[frame_loc] = eyelid.pupil_obstruct(self.eyelid_list[frame_loc],
-                                                                               self.pupil_list[frame_loc].contour)
-                        except:
-                            self.blink_list[frame_loc] = None
+                        self.blink_list[frame_loc] = eyelid.pupil_obstruct(self.eyelid_list[frame_loc], self.pupil_list[frame_loc].contour)
                     except:
                         self.eyelid_list[frame_loc] = None
                         self.blink_list[frame_loc] = None
@@ -896,7 +894,6 @@ class MeasureTorsion(tk.Frame):
 
 
 def run():
-
     app = OcularTorsionApplication()
     app.title('Ocular Torsion Measurement')
     app.mainloop()

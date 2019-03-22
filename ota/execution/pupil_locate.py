@@ -10,8 +10,8 @@ def construct_pupil_list(video, first_frame, last_frame, threshold=10):
 
     Inputs:
         video - video object
-        first_frame - int
-        last_frame - int
+        first_frame - Integer representing index of first frame to analyze.
+        last_frame - Integer representing index of last frame to analyze.
 
     Outputs:
         pupil_list: Dictionary of pupil objects where the key is the frame number and the value is the pupil object.

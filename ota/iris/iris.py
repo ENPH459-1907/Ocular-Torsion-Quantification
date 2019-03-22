@@ -33,8 +33,7 @@ def iris_transform(
         theta_window - Range of theta values over which to sample the cartesian image
         theta_resolution - sampling interval for theta in degrees. Default is 1 degree.
         r_resolution - sampling interval for radius. Default is 1 pixel length
-        ret_cartesian - boolean value which allows the return of only the iris in
-                        cartesian coordinates. By default this is set to false
+        mode - string value  representing whether to return the iris in cartesian or polar coodrinates. By default this is set to polar
         reference_pupil - the reference pupil used for geometric correction
         eye_radius - the radius of the eyeball in pixels
 
@@ -44,11 +43,10 @@ def iris_transform(
     '''
     # If no pupil can be found, then just skip everything
     if pupil is None:
-        print('fuck')
         return None
 
-    inner_radius_buffer = 5
-    min_radius = int(pupil.major/2) + inner_radius_buffer
+    INNER_RADIUS_BUFFER = 5
+    min_radius = int(pupil.major/2) + INNER_RADIUS_BUFFER
     max_radius = min_radius + int(iris_thickness)
     pupil_row_loc = int(pupil.center_row)
     pupil_col_loc = int(pupil.center_col)
@@ -81,6 +79,7 @@ def iris_transform(
         major_minor_ratio = pupil.minor/pupil.major
 
         if reference_pupil == None or major_minor_ratio >= 0.9:
+            # If there is no reference pupil or the pupil is circular enough, dont do any correction
             # Using scipy's map_coordinates(), we map the input array into polar
             # space centered about the detected pupil center location.
             polar_iris = ndimage.interpolation.map_coordinates(frame,
@@ -94,11 +93,13 @@ def iris_transform(
             v_pupil_movement = pupil.center_row - reference_pupil.center_row
 
             if eye_radius == None:
+                # If uncalibrated, calculate the radius using the shape of the pupil
                 lateral_angle = get_lateral_angle(major_minor_ratio)
                 r_eye = sqrt(h_pupil_movement**2+v_pupil_movement**2)/sp.sin(lateral_angle)
             else:
                 r_eye = eye_radius
 
+            # The amount the eye has rotated
             phi0 = asin(h_pupil_movement/r_eye)
             theta0 = asin(v_pupil_movement/r_eye)
             map_x = np.zeros((n_radius, n_theta), dtype=np.float32)
@@ -108,11 +109,13 @@ def iris_transform(
             try:
                 for r in range(min_radius,max_radius,r_resolution):
                     for a in range(theta_window[0],theta_window[1],theta_resolution):
+                        # Each point in the iris in terms of polar angles from the center of the reference pupil
                         phi = phi0 + asin(r * cos(a * pi / 180) / r_eye)
                         theta = theta0 - asin(r * sin(a * pi / 180) / r_eye)
+                        # Calculate pixel location in image
                         x_loc = reference_pupil.center_col + r_eye * sin(phi)
                         y_loc = reference_pupil.center_row + r_eye * sin(theta)
-                        #frame[min(y_loc, frame.shape[0]-1)][min(x_loc, frame.shape[1]-1)] = 0
+                        # Map polar coordinates to pixel location in image
                         map_x[((r - min_radius)/r_resolution, (a - theta_window[0])/theta_resolution)] = x_loc
                         map_y[((r - min_radius)/r_resolution, (a - theta_window[0])/theta_resolution)] = y_loc
                 geometric_corrected_iris = remap(frame, map_x, map_y, INTER_LINEAR)

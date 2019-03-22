@@ -23,11 +23,6 @@ def click_coordinates(img, window_title='', block=False):
 
                   click_coord = {'c': column index, 'r': row index}
     '''
-    # ax = plt.gca()
-    # ax.set_title(window_title)
-    # fig = plt.gcf()
-    # implot = ax.imshow(img, 'gray')
-
     global_click_coord = {}
     fig, ax = plt.subplots()
     ax.set_title(window_title)
@@ -40,7 +35,6 @@ def click_coordinates(img, window_title='', block=False):
             global global_click_coord
             global_click_coord['c'] = event.xdata
             global_click_coord['r'] = event.ydata
-            # fig.canvas.mpl_disconnect(cid)
             plt.close()
 
     cid = fig.canvas.mpl_connect('button_press_event', onclick)

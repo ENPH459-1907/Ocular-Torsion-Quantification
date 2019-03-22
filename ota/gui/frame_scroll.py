@@ -137,7 +137,6 @@ class PupilTracker(FrameTracker):
         if self.ind in self.pupil_list:
             self.pupil_at_ind = self.pupil_list[self.ind]
             if self.pupil_at_ind:
-                #self.pupil_circle = Circle((self.pupil_at_ind.center_col,self.pupil_at_ind.center_row),self.pupil_at_ind.radius,fill=False,ec=[1,0,0])
                 self.pupil_circle = Ellipse((self.pupil_at_ind.center_col,self.pupil_at_ind.center_row), self.pupil_at_ind.major, self.pupil_at_ind.minor, angle=(self.pupil_at_ind.angle-90),fill=False,ec=[1,0,0])
                 self.pupil_center = Circle((self.pupil_at_ind.center_col,self.pupil_at_ind.center_row),int(0.1*self.pupil_at_ind.radius),fill=True,ec=[1,0,0], fc=[1,0,0])
                 self.pupil_patch = self.ax.add_patch(self.pupil_circle)
@@ -276,7 +275,6 @@ class WindowTracker(FrameTracker):
         self.im.set_data(self.video[self.ind])
         self.ax.set_xlabel('Frame %s' % self.ind)
         self.im.axes.figure.canvas.draw()
-        #plt.savefig('frame_%d.png' % (self.ind), bbox_inches='tight')
 
 
 def frame_scroll(video):

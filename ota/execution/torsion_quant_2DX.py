@@ -1,7 +1,6 @@
 import numpy as np
 
 from ota.video import video as vid
-from ota import presets
 from ota.torsion import xcorr2d
 from ota.pupil import pupil
 from ota.iris import iris, eyelid_removal
@@ -21,7 +20,6 @@ def quantify_torsion(
     pupil_list,
     blink_list,
     threshold,
-    alternate = None,
     WINDOW_THETA = None,
     SEGMENT_THETA = None,
     upper_iris = None,
@@ -60,6 +58,10 @@ def quantify_torsion(
 
         start_frame:
             Integer
+            Mandatory input which is the index of the first frame to analyze.
+
+        reference_frame:
+            Integer
             Mandatory input which is the index of the reference frame.
 
         end_frame:
@@ -77,6 +79,10 @@ def quantify_torsion(
             value: 1 - blink
                    0 - no blink
                    None - None
+
+        threshold:
+            Integer
+            The pupil colour threshold
 
         WINDOW_THETA:
             Integer
@@ -108,18 +114,19 @@ def quantify_torsion(
         calibration_angle:
             Double
             The angle the eye is rotated in the calibration frame
-
-        torsion_deriative:
-            Dictionary
-            key = frame number
-            value = rotation from previous frame
-
     Returns:
-
         torsion:
             Dictionary
             key = frame number
             value = rotation from reference frame
+        torsion_deriative:
+            Dictionary
+            key = frame number
+            value = rotation from previous frame
+        transformed_iris
+            Dictionary
+            key = frame number
+            value = image of polar transformed iris
     '''
 
     upsample_factor = 1
@@ -155,17 +162,10 @@ def quantify_torsion(
         comparison_bounds_sr = (feature_theta - SEGMENT_THETA, feature_theta + SEGMENT_THETA)
         start_sr = int((SEGMENT_THETA - WINDOW_THETA)/upsample_factor)
 
-    if calibration_frame != None:
-        h_dist = ref_pupil.center_col - pupil_list[calibration_frame].center_col
-        v_dist = ref_pupil.center_row - pupil_list[calibration_frame].center_row
-        eyeball_radius = sqrt(h_dist**2 + v_dist**2)/sin(calibration_angle*pi/180)
-    else:
-        eyeball_radius = None
-
     # get the reference window from the first frame of the video
     # this will be the base for all torsion ie. all rotation is relative to this window
     ref_pupil = pupil.Pupil(video[reference_frame], threshold)
-    if alternate:
+    if transform_mode == 'alternate':
         first_window_sr = iris.iris_transform(video[reference_frame],
             ref_pupil,
             WINDOW_RADIUS,
@@ -177,6 +177,13 @@ def quantify_torsion(
         WINDOW_RADIUS,
         theta_resolution = upsample_factor,
         theta_window = reference_bounds)
+
+    if calibration_frame != None:
+        h_dist = ref_pupil.center_col - pupil_list[calibration_frame].center_col
+        v_dist = ref_pupil.center_row - pupil_list[calibration_frame].center_row
+        eyeball_radius = sqrt(h_dist**2 + v_dist**2)/sin(calibration_angle*pi/180)
+    else:
+        eyeball_radius = None
 
     if transform_mode == 'full' or transform_mode == 'alternate':
         # extend iris window
@@ -230,7 +237,7 @@ def quantify_torsion(
             current_frame = None
             print('WARNING: No pupil in frame: %d \n Torsion cannot be calculated' % (frame_loc))
         else:
-            if alternate and blink_list[frame_loc] == 1:
+            if transform_mode == 'alternate' and blink_list[frame_loc] == 1:
                 current_frame = iris.iris_transform(frame,
                     pupil_list[frame_loc],
                     WINDOW_RADIUS,
@@ -265,30 +272,26 @@ def quantify_torsion(
                         threshold=0,
                         max_angle=pre.MAX_ANGLE)
 
-                    if i > 0:
-                        previous_window = transformed_iris[frame_loc - 1]
-                        if previous_window is None:
-                            previous_deg = None
-                            continue
-                        if not (alternate and blink_list[frame_loc] == 1):
-                            previous_window = eyelid_removal.iris_extension(previous_window,
-                                theta_resolution=upsample_factor,
-                                lower_theta=-pre.MAX_ANGLE,
-                                upper_theta=pre.MAX_ANGLE)
-                        # get the degree of rotation of the current frame based on previous frame
-                        previous_deg = xcorr2d.xcorr2d(current_frame,
-                            previous_window,
-                            start=start,
-                            prev_deg=None,
-                            torsion_mode=torsion_mode,
-                            resolution=RESOLUTION,
-                            threshold=0,
-                            max_angle=pre.MAX_ANGLE)
-                    else:
+                    previous_window = transformed_iris[frame_loc - 1]
+                    if previous_window is None:
                         previous_deg = None
+                        continue
+                    if not (transform_mode == 'alternate' and blink_list[frame_loc] == 1):
+                        previous_window = eyelid_removal.iris_extension(previous_window,
+                            theta_resolution=upsample_factor,
+                            lower_theta=-pre.MAX_ANGLE,
+                            upper_theta=pre.MAX_ANGLE)
+                    # get the degree of rotation of the current frame based on previous frame
+                    previous_deg = xcorr2d.xcorr2d(current_frame,
+                        previous_window,
+                        start=start,
+                        prev_deg=None,
+                        torsion_mode=torsion_mode,
+                        resolution=RESOLUTION,
+                        threshold=0,
+                        max_angle=pre.MAX_ANGLE)
             except:
                 deg = None
-        previous_deg = None
         torsion[frame_loc] = deg
         torsion_derivative[frame_loc] = previous_deg
         transformed_iris[frame_loc] = current_frame

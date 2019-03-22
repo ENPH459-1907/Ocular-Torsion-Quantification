@@ -6,7 +6,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 import csv
 import pdb
-#import settings
 import ota.pupil as p
 
 class Data():
@@ -27,7 +26,6 @@ class Data():
         self.metadata = None
         self.start_frame = None
         self.torsion = None
-        #self.torsion_derivative = None
         self.pupil_list = None
 
         # If save path is not specified, set it to the current directory
@@ -57,7 +55,6 @@ class Data():
         self.metadata = metadata
         self.start_frame = start_frame
         self.torsion = torsion
-        #self.torsion_derivative = np.insert(np.diff(self.torsion), 0, np.nan)
         self.frame_index_list = frame_index_list
         self.pupil_list = pupil_list
 

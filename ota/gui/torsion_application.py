@@ -698,28 +698,6 @@ class MeasureTorsion(tk.Frame):
         measurement_options_label = tk.Label(self, text="Measurement Settings", font=LARGE_FONT)
         measurement_options_label.grid(row=11,column=0, sticky=tk.W)
 
-        self.upper_occ_get_button = tk.Button(self, text="Select Upper Occlusion Limit", command=lambda: self.get_occlusion_coordinates(controller))
-        self.upper_occ_get_button.grid(row=12,column=0, sticky=tk.W)
-
-        self.upper_occ_rec_button = tk.Button(self, text="Record Upper Occlusion Limit", command=lambda: self.record_upper_occ())
-        self.upper_occ_rec_button.grid(row=12,column=1, sticky=tk.E)
-
-        self.upper_set_check = tk.StringVar()
-        self.upper_set_check.set('Not Set')
-        upper_check_label = tk.Label(self, textvariable=self.upper_set_check)
-        upper_check_label.grid(row=12,column=2, sticky=tk.W)
-
-        self.lower_occ_get_button = tk.Button(self, text="Select lower Occlusion Limit", command=lambda: self.get_occlusion_coordinates(controller))
-        self.lower_occ_get_button.grid(row=13,column=0, sticky=tk.W)
-
-        self.lower_occ_rec_button = tk.Button(self, text="Record Lower Occlusion Limit", command=lambda: self.record_lower_occ())
-        self.lower_occ_rec_button.grid(row=13,column=1, sticky=tk.E)
-
-        self.lower_set_check = tk.StringVar()
-        self.lower_set_check.set('Not Set')
-        lower_check_label = tk.Label(self, textvariable=self.lower_set_check)
-        lower_check_label.grid(row=13,column=2, sticky=tk.W)
-
         segment_theta_label = tk.Label(self, text="Iris Segment Bounds (deg):")
         segment_theta_label.grid(row=14, column=0, sticky=tk.W)
 
@@ -775,26 +753,6 @@ class MeasureTorsion(tk.Frame):
 
         self.update()
 
-    def get_occlusion_coordinates(self, controller):
-        '''
-        Opens the starting video frame in a separate window so that the user can click on the upper region of the iris not occluded by upper eyelid or upper eyelashes.
-        Requires the user to separately 'record upper occlusion coordinates'
-        '''
-        clk.click_coordinates(controller.video[controller.start_frame.get()], 'Click On Undisturbed Iris Closest To Eyelid')
-
-    def record_upper_occ(self):
-        '''
-        Stores upper occlustion coordinates clicked on to be used in the torsion quantification method.
-        '''
-        self.upper_iris_occ = clk.get_click_coordinates()
-        self.upper_set_check.set('Set')
-
-    def record_lower_occ(self):
-        '''
-        Stores lower occlustion coordinates clicked on to be used in the torsion quantification method.
-        '''
-        self.lower_iris_occ = clk.get_click_coordinates()
-        self.lower_set_check.set('Set')
 
     def get_feature_coordinates(self, controller):
         '''
@@ -867,22 +825,6 @@ class MeasureTorsion(tk.Frame):
             self.feature_loc_button.config(state='normal')
             self.feature_rec_button.config(state='normal')
             self.NoiseReplacement.set(0)
-
-
-        # If the user wants to replace portions of the iris with noise, allow the user to use the occlusion setting function.
-        if self.NoiseReplacement.get():
-            self.upper_occ_get_button.config(state='normal')
-            self.upper_occ_rec_button.config(state='normal')
-
-            self.lower_occ_get_button.config(state='normal')
-            self.lower_occ_rec_button.config(state='normal')
-        # If the user does not want to replace portions of the iris with noise disable the occlusion setting buttons.
-        else:
-            self.upper_occ_get_button.config(state='disabled')
-            self.upper_occ_rec_button.config(state='disabled')
-
-            self.lower_occ_get_button.config(state='disabled')
-            self.lower_occ_rec_button.config(state='disabled')
 
 
         if self.Calibrate.get():

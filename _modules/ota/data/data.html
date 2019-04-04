@@ -1,0 +1,322 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ota.data.data &#8212; ota 1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ota.data.data</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">pdb</span>
+<span class="kn">import</span> <span class="nn">ota.pupil</span> <span class="k">as</span> <span class="nn">p</span>
+
+<div class="viewcode-block" id="Data"><a class="viewcode-back" href="../../../modules/ota.data.html#ota.data.data.Data">[docs]</a><span class="k">class</span> <span class="nc">Data</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize Data object.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------------------------------</span>
+<span class="sd">        name : String</span>
+<span class="sd">            Name of data object. Used to as the filename when saving the data.</span>
+<span class="sd">        path : String</span>
+<span class="sd">            Path of desired directory where the data should be saved.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.csv&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_frame</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">torsion</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># If save path is not specified, set it to the current directory</span>
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">curdir</span>
+
+<div class="viewcode-block" id="Data.set"><a class="viewcode-back" href="../../../modules/ota.data.html#ota.data.data.Data.set">[docs]</a>    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">torsion</span><span class="p">,</span> <span class="n">start_frame</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pupil_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">frame_index_list</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Populate data fields with values.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -------------------------------------</span>
+<span class="sd">        torsion : list</span>
+<span class="sd">            List of ocular torsion values.</span>
+<span class="sd">        start_frame : int</span>
+<span class="sd">            Video frame index corresponding to the start point of torsion analysis.</span>
+<span class="sd">        pupil_list : list</span>
+<span class="sd">            List of pupil objects.</span>
+<span class="sd">        metadata : dict</span>
+<span class="sd">            Any video/torsion metadata the user wishes to store.</span>
+<span class="sd">        frame_index_list : list</span>
+<span class="sd">            List of same length as torsion. Maps torsion values to corresponding video frame indeces.</span>
+<span class="sd">            Specified when the video frames analyzed are not just subsequent frames.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_frame</span> <span class="o">=</span> <span class="n">start_frame</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">torsion</span> <span class="o">=</span> <span class="n">torsion</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frame_index_list</span> <span class="o">=</span> <span class="n">frame_index_list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span> <span class="o">=</span> <span class="n">pupil_list</span></div>
+
+<div class="viewcode-block" id="Data.save"><a class="viewcode-back" href="../../../modules/ota.data.html#ota.data.data.Data.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save data at data object path.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -------------------------------------</span>
+<span class="sd">        file_name : String</span>
+<span class="sd">            Desired save file name.</span>
+<span class="sd">            e.g. &quot;saved_data1&quot;</span>
+
+<span class="sd">        path : String</span>
+<span class="sd">            Optional parameter specifying a save location.</span>
+
+<span class="sd">        mode : String</span>
+<span class="sd">            Optional parameter specifiying the desired type of save file.</span>
+<span class="sd">            &#39;csv&#39; - Save data as a csv file.</span>
+<span class="sd">            &#39;pickle&#39; - save data as a pickled python object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check to make sure file_name is string.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="c1"># TODO throw exception</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Please enter a valid file name string.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Check to make sure path is valid</span>
+        <span class="c1"># TODO use os.path.isfile to check file path</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">save_loc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+            <span class="n">save_loc</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">SAVE_PATH</span><span class="p">)</span>
+
+        <span class="n">save_str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_loc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">save_str</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">csvfile</span><span class="p">:</span>
+            <span class="n">csvwriter</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">csvfile</span><span class="p">)</span>
+
+            <span class="c1"># save metadata first</span>
+            <span class="n">csvwriter</span><span class="o">.</span><span class="n">writerow</span><span class="p">([</span><span class="s1">&#39;METADATA&#39;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">csvwriter</span><span class="o">.</span><span class="n">writerow</span><span class="p">([</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">])</span>
+
+                <span class="c1"># optional fps to calculate video time</span>
+                <span class="n">fps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;VIDEO_FPS&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="n">csvwriter</span><span class="o">.</span><span class="n">writerow</span><span class="p">([</span><span class="s1">&#39;TORSION RESULTS&#39;</span><span class="p">])</span>
+            <span class="n">csvwriter</span><span class="o">.</span><span class="n">writerow</span><span class="p">([</span><span class="s1">&#39;Frame Index&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;Frame Time&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;Torsion [deg]&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;Torsion Derivative [deg]&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;Pupil Center Column&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;Pupil Center Row&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;Pupil Radius [pixels]&#39;</span><span class="p">])</span>
+
+            <span class="c1"># default time is empty string</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+            <span class="c1"># save to csv</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">deg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">torsion</span><span class="p">):</span>
+                <span class="c1"># Check if a specific frame index list exists or not</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_index_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">fps</span><span class="p">:</span>
+                        <span class="n">time</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">fps</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_frame</span> <span class="o">+</span> <span class="n">i</span><span class="p">)</span>
+                        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_frame</span> <span class="o">+</span> <span class="n">i</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">fps</span><span class="p">:</span>
+                        <span class="n">time</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">fps</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_index_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_index_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+                <span class="c1"># Check to see if a pupil list exists</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">pupil_center_col</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                    <span class="n">pupil_center_row</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                    <span class="n">pupil_radius</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">temp_pupil</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">start_frame</span><span class="p">]</span>
+                    <span class="n">pupil_center_col</span> <span class="o">=</span> <span class="n">temp_pupil</span><span class="o">.</span><span class="n">center_col</span>
+                    <span class="n">pupil_center_row</span> <span class="o">=</span> <span class="n">temp_pupil</span><span class="o">.</span><span class="n">center_row</span>
+                    <span class="n">pupil_radius</span> <span class="o">=</span> <span class="n">temp_pupil</span><span class="o">.</span><span class="n">radius</span>
+
+                <span class="c1"># Find the change in angle</span>
+                <span class="c1"># ie cross correlation with respect to previous frame</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">delta_deg</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">delta_deg</span> <span class="o">=</span> <span class="n">deg</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">torsion</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">delta_deg</span><span class="p">)</span>
+
+                <span class="c1"># Write the results</span>
+                <span class="n">csvwriter</span><span class="o">.</span><span class="n">writerow</span><span class="p">([</span><span class="n">frame</span><span class="p">,</span>
+                                    <span class="n">time</span><span class="p">,</span>
+                                    <span class="nb">repr</span><span class="p">(</span><span class="n">deg</span><span class="p">),</span>
+                                    <span class="nb">repr</span><span class="p">(</span><span class="n">delta_deg</span><span class="p">),</span>
+                                    <span class="n">pupil_center_col</span><span class="p">,</span>
+                                    <span class="n">pupil_center_row</span><span class="p">,</span>
+                                    <span class="n">pupil_radius</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Data.load"><a class="viewcode-back" href="../../../modules/ota.data.html#ota.data.data.Data.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load data saved in .csv file saved at path specified in self.path.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">torsion</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pupil_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">frame_index_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">start_frame</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+                <span class="n">metadata_flag</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">if</span> <span class="s1">&#39;metadata&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                    <span class="n">metadata_flag</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+
+                    <span class="k">if</span> <span class="s1">&#39;torsion&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                        <span class="n">metadata_flag</span> <span class="o">=</span> <span class="kc">False</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">metadata_flag</span><span class="p">:</span>
+                        <span class="n">metadata</span><span class="p">[</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">start_frame</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+                        <span class="n">frame_index_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                        <span class="n">torsion</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+                        <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="ow">and</span> <span class="n">line</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="ow">and</span> <span class="n">line</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                            <span class="n">pupil_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">temp_pupil</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">Pupil</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">skip_init</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                            <span class="n">temp_pupil</span><span class="o">.</span><span class="n">center_col</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+                            <span class="n">temp_pupil</span><span class="o">.</span><span class="n">center_row</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+                            <span class="n">temp_pupil</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span>
+                            <span class="n">pupil_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_pupil</span><span class="p">)</span>
+
+                        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="c1"># set object from file</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">torsion</span><span class="p">,</span> <span class="n">start_frame</span><span class="o">=</span><span class="n">start_frame</span><span class="p">,</span> <span class="n">pupil_list</span><span class="o">=</span><span class="n">pupil_list</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span> <span class="n">frame_index_list</span><span class="o">=</span><span class="n">frame_index_list</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="load"><a class="viewcode-back" href="../../../modules/ota.data.html#ota.data.data.load">[docs]</a><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">file_str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load data from file into data object.</span>
+<span class="sd">    Overwrites any currently existing data in that object.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -------------------------------------</span>
+<span class="sd">    file_str : String</span>
+<span class="sd">        String pointing to file name to be loaded.</span>
+<span class="sd">        e.g. &quot;D:\data\saved_data1.csv&quot;</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------------------------------------</span>
+<span class="sd">    data : Data object</span>
+<span class="sd">        Data object stored in file being loaded</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">file_str</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_str</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">file_str</span><span class="p">)</span>
+
+        <span class="c1"># Initialize empty data object</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="c1"># Load the data</span>
+        <span class="n">d</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+        <span class="c1"># return data object</span>
+        <span class="k">return</span> <span class="n">d</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Please enter a valid file string.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Bryden Fogelman, Cyrus Neary, Sam Reid.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

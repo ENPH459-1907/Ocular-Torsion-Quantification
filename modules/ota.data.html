@@ -1,0 +1,174 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ota.data package &#8212; ota 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ota.gui package" href="ota.gui.html" />
+    <link rel="prev" title="ota.eyelid package" href="ota.eyelid.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="ota-data-package">
+<h1>ota.data package<a class="headerlink" href="#ota-data-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-ota.data.data">
+<span id="ota-data-data-module"></span><h2>ota.data.data module<a class="headerlink" href="#module-ota.data.data" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ota.data.data.Data">
+<em class="property">class </em><code class="descclassname">ota.data.data.</code><code class="descname">Data</code><span class="sig-paren">(</span><em>name</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/data/data.html#Data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.data.data.Data" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="ota.data.data.Data.load">
+<code class="descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/data/data.html#Data.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.data.data.Data.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load data saved in .csv file saved at path specified in self.path.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.data.data.Data.save">
+<code class="descname">save</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/data/data.html#Data.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.data.data.Data.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save data at data object path.</p>
+<dl class="docutils">
+<dt>file_name <span class="classifier-delimiter">:</span> <span class="classifier">String</span></dt>
+<dd>Desired save file name.
+e.g. “saved_data1”</dd>
+<dt>path <span class="classifier-delimiter">:</span> <span class="classifier">String</span></dt>
+<dd>Optional parameter specifying a save location.</dd>
+<dt>mode <span class="classifier-delimiter">:</span> <span class="classifier">String</span></dt>
+<dd>Optional parameter specifiying the desired type of save file.
+‘csv’ - Save data as a csv file.
+‘pickle’ - save data as a pickled python object.</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.data.data.Data.set">
+<code class="descname">set</code><span class="sig-paren">(</span><em>torsion</em>, <em>start_frame=0</em>, <em>pupil_list=None</em>, <em>metadata=None</em>, <em>frame_index_list=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/data/data.html#Data.set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.data.data.Data.set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Populate data fields with values.</p>
+<dl class="docutils">
+<dt>torsion <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd>List of ocular torsion values.</dd>
+<dt>start_frame <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>Video frame index corresponding to the start point of torsion analysis.</dd>
+<dt>pupil_list <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd>List of pupil objects.</dd>
+<dt>metadata <span class="classifier-delimiter">:</span> <span class="classifier">dict</span></dt>
+<dd>Any video/torsion metadata the user wishes to store.</dd>
+<dt>frame_index_list <span class="classifier-delimiter">:</span> <span class="classifier">list</span></dt>
+<dd>List of same length as torsion. Maps torsion values to corresponding video frame indeces.
+Specified when the video frames analyzed are not just subsequent frames.</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="ota.data.data.load">
+<code class="descclassname">ota.data.data.</code><code class="descname">load</code><span class="sig-paren">(</span><em>file_str</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/data/data.html#load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.data.data.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load data from file into data object.
+Overwrites any currently existing data in that object.</p>
+<dl class="docutils">
+<dt>file_str <span class="classifier-delimiter">:</span> <span class="classifier">String</span></dt>
+<dd>String pointing to file name to be loaded.
+e.g. “D:datasaved_data1.csv”</dd>
+</dl>
+<dl class="docutils">
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">Data object</span></dt>
+<dd>Data object stored in file being loaded</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-ota.data">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-ota.data" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">ota.data package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-ota.data.data">ota.data.data module</a></li>
+<li><a class="reference internal" href="#module-ota.data">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="ota.eyelid.html" title="previous chapter">ota.eyelid package</a></li>
+      <li>Next: <a href="ota.gui.html" title="next chapter">ota.gui package</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/ota.data.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Bryden Fogelman, Cyrus Neary, Sam Reid.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="../_sources/modules/ota.data.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,464 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ota.gui.frame_scroll &#8212; ota 1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ota.gui.frame_scroll</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">pardir</span><span class="p">)))</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="k">import</span> <span class="n">Circle</span>
+<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="k">import</span> <span class="n">Ellipse</span>
+<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="k">import</span> <span class="n">Arrow</span>
+<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="k">import</span> <span class="n">Wedge</span>
+
+<div class="viewcode-block" id="FrameTracker"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.FrameTracker">[docs]</a><span class="k">class</span> <span class="nc">FrameTracker</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Object that displays a video frame. Class used by frame_scroll method.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    ax : object containing elements of a figure</span>
+<span class="sd">        Used to set window title and axis labels</span>
+
+<span class="sd">    video : array_like</span>
+<span class="sd">        series of video frames</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Use keyboard to navigate images&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">video</span> <span class="o">=</span> <span class="n">video</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slices</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Frame </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FrameTracker.on_key"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.FrameTracker.on_key">[docs]</a>    <span class="k">def</span> <span class="nf">on_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;up&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">slices</span>
+        <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span><span class="s1">&#39;down&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">slices</span>
+        <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span><span class="s1">&#39;right&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="o">+</span> <span class="mi">50</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">slices</span>
+        <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span><span class="s1">&#39;left&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="o">-</span> <span class="mi">50</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">slices</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="FrameTracker.update"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.FrameTracker.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Frame </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="EyelidTracker"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.EyelidTracker">[docs]</a><span class="k">class</span> <span class="nc">EyelidTracker</span><span class="p">(</span><span class="n">FrameTracker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Object that displays a video frame with the located eyelid overlayed. Class used by eyelid_scroll method.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    ax : object containing elements of a figure</span>
+<span class="sd">        Used to set window title and axis labels</span>
+
+<span class="sd">    video : array_like</span>
+<span class="sd">        series of video frames</span>
+
+<span class="sd">    eyelid : dictionary</span>
+<span class="sd">        dictionary of pupils where the key is the frame index and the value is the frame with the eyelid removed.</span>
+<span class="sd">        Does not need to include all video frames.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">,</span> <span class="n">eyelid_list</span><span class="p">):</span>
+        <span class="n">FrameTracker</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eyelid_list</span> <span class="o">=</span> <span class="n">eyelid_list</span>
+
+<div class="viewcode-block" id="EyelidTracker.update"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.EyelidTracker.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">display_img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">eyelid_list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">eyelid_at_ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eyelid_list</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">eyelid_at_ind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">display_img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eyelid_at_ind</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">display_img</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Frame </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="PolarTransformTracker"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.PolarTransformTracker">[docs]</a><span class="k">class</span> <span class="nc">PolarTransformTracker</span><span class="p">(</span><span class="n">FrameTracker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Object that displays a video frame with the located eyelid overlayed. Class used by polar_transform_scroll method.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    ax : object containing elements of a figure</span>
+<span class="sd">        Used to set window title and axis labels</span>
+
+<span class="sd">    video : array_like</span>
+<span class="sd">        series of video frames</span>
+
+<span class="sd">    eyelid : dictionary</span>
+<span class="sd">        dictionary of pupils where the key is the frame index and the value is the frame with the eyelid removed.</span>
+<span class="sd">        Does not need to include all video frames.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">,</span> <span class="n">polar_transform_list</span><span class="p">):</span>
+        <span class="n">FrameTracker</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">polar_transform_list</span> <span class="o">=</span> <span class="n">polar_transform_list</span>
+
+<div class="viewcode-block" id="PolarTransformTracker.update"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.PolarTransformTracker.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">display_img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">polar_transform_list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">polar_transform_at_ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polar_transform_list</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polar_transform_at_ind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">display_img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polar_transform_at_ind</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">display_img</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Frame </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="PupilTracker"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.PupilTracker">[docs]</a><span class="k">class</span> <span class="nc">PupilTracker</span><span class="p">(</span><span class="n">FrameTracker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Object that displays a video frame with the located pupil overlayed. Class used by pupil_scroll method.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    ax : object containing elements of a figure</span>
+<span class="sd">        Used to set window title and axis labels</span>
+
+<span class="sd">    video : array_like</span>
+<span class="sd">        series of video frames</span>
+
+<span class="sd">    pupil_list : dictionary</span>
+<span class="sd">        dictionary of pupils where the key is the frame index and the value is the pupil.</span>
+<span class="sd">        Does not need to include all video frames.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">,</span> <span class="n">pupil_list</span><span class="p">):</span>
+        <span class="n">FrameTracker</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span> <span class="o">=</span> <span class="n">pupil_list</span>
+
+<div class="viewcode-block" id="PupilTracker.update"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.PupilTracker.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pupil_patch</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">center_patch</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pupil_circle</span> <span class="o">=</span> <span class="n">Ellipse</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_col</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_row</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">major</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">minor</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">angle</span><span class="o">-</span><span class="mi">90</span><span class="p">),</span><span class="n">fill</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">ec</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pupil_center</span> <span class="o">=</span> <span class="n">Circle</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_col</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_row</span><span class="p">),</span><span class="nb">int</span><span class="p">(</span><span class="mf">0.1</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">radius</span><span class="p">),</span><span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">ec</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">fc</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pupil_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_circle</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">center_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_center</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ERROR: No pupil at frame index </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Frame </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="TorsionTracker"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.TorsionTracker">[docs]</a><span class="k">class</span> <span class="nc">TorsionTracker</span><span class="p">(</span><span class="n">FrameTracker</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Torsion tracking object. Window updates x y axis to visualize torsion. Class used by torsion_scroll method.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">                ax : object containing elements of a figure</span>
+<span class="sd">                        Used to set window title and axis labels</span>
+
+<span class="sd">                video : array_like</span>
+<span class="sd">                        video to scroll through</span>
+
+<span class="sd">                pupil_list : dictionary</span>
+<span class="sd">                        dictionary of pupils where the key is the frame index and the value is the pupil.</span>
+<span class="sd">                        Does not need to include all video frames.</span>
+
+<span class="sd">                offset_first_frame : dictionary</span>
+<span class="sd">                        dictionary of rotation angles. key is the frame index and the value is the rotation.</span>
+<span class="sd">                        Does not need to include all video frames</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">,</span> <span class="n">pupil_list</span><span class="p">,</span> <span class="n">offset_first_frame</span><span class="p">):</span>
+        <span class="n">FrameTracker</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span> <span class="o">=</span> <span class="n">pupil_list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">torsion_list</span> <span class="o">=</span> <span class="n">offset_first_frame</span>
+
+
+<div class="viewcode-block" id="TorsionTracker.update"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.TorsionTracker.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pupil_patch</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">center_patch</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x_patch</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_patch</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pupil_circle</span> <span class="o">=</span> <span class="n">Circle</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_col</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_row</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">radius</span><span class="p">,</span><span class="n">fill</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">ec</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pupil_center</span> <span class="o">=</span> <span class="n">Circle</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_col</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_row</span><span class="p">),</span><span class="nb">int</span><span class="p">(</span><span class="mf">0.1</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">radius</span><span class="p">),</span><span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">ec</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="n">fc</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pupil_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_circle</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">center_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_center</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ERROR: No pupil at frame index </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">torsion_list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">torsion_list</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">]</span>
+            <span class="n">radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="o">.</span><span class="n">height</span><span class="o">/</span><span class="mi">2</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">x_axis</span> <span class="o">=</span> <span class="n">Arrow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_col</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_row</span><span class="p">,</span><span class="n">radius</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="p">)</span><span class="o">/</span><span class="mi">180</span><span class="p">),</span><span class="o">-</span><span class="n">radius</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="p">)</span><span class="o">/</span><span class="mi">180</span><span class="p">),</span> <span class="n">width</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">ec</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">fc</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">y_axis</span> <span class="o">=</span> <span class="n">Arrow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_col</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_row</span><span class="p">,</span><span class="n">radius</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="o">+</span><span class="mi">90</span><span class="p">)</span><span class="o">/</span><span class="mi">180</span><span class="p">),</span><span class="o">-</span><span class="n">radius</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="o">+</span><span class="mi">90</span><span class="p">)</span><span class="o">/</span><span class="mi">180</span><span class="p">),</span> <span class="n">width</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">ec</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">fc</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">x_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_axis</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">y_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_axis</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ERROR: No pupil at frame index </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Frame </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="WindowTracker"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.WindowTracker">[docs]</a><span class="k">class</span> <span class="nc">WindowTracker</span><span class="p">(</span><span class="n">FrameTracker</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Window tracking object. Window updates window location while frames are scrolling. Class used by window_scroll method.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">                ax : object containing elements of a figure</span>
+<span class="sd">                        Used to set window title and axis labels</span>
+
+<span class="sd">                video : array_like</span>
+<span class="sd">                        video to scroll through</span>
+
+<span class="sd">                pupil_list : dictionary</span>
+<span class="sd">                        dictionary of pupils where the key is the frame index and the value is the pupil.</span>
+<span class="sd">                        Does not need to include all video frames.</span>
+
+<span class="sd">                offset_first_frame : dictionary</span>
+<span class="sd">                        dictionary of rotation angles. key is the frame index and the value is the rotation.</span>
+<span class="sd">                        Does not need to include all video frames</span>
+
+<span class="sd">                theta_window : tuple of angles</span>
+<span class="sd">                        theta[0] is the lower bound of the window</span>
+<span class="sd">                        theta[1] is the upper bound of the window</span>
+
+<span class="sd">                WINDOW_RADIUS: integer</span>
+<span class="sd">                        Pixel width of the window radius</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">,</span> <span class="n">pupil_list</span><span class="p">,</span> <span class="n">offset_first_frame</span><span class="p">,</span><span class="n">theta_window</span><span class="p">,</span><span class="n">WINDOW_RADIUS</span><span class="p">):</span>
+        <span class="n">FrameTracker</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span> <span class="o">=</span> <span class="n">pupil_list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offset_first_frame</span> <span class="o">=</span> <span class="n">offset_first_frame</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_window</span> <span class="o">=</span> <span class="n">theta_window</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">WINDOW_RADIUS</span> <span class="o">=</span> <span class="n">WINDOW_RADIUS</span>
+
+<div class="viewcode-block" id="WindowTracker.update"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.WindowTracker.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pupil_patch</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">center_patch</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">window_patch</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_list</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pupil_circle</span> <span class="o">=</span> <span class="n">Circle</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_col</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_row</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">radius</span><span class="p">,</span><span class="n">fill</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">ec</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pupil_center</span> <span class="o">=</span> <span class="n">Circle</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_col</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_row</span><span class="p">),</span><span class="nb">int</span><span class="p">(</span><span class="mf">0.1</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">radius</span><span class="p">),</span><span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">ec</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="n">fc</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pupil_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_circle</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">center_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_center</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ERROR: No pupil at frame index </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_first_frame</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_first_frame</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">]</span>
+            <span class="n">radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="o">.</span><span class="n">height</span><span class="o">/</span><span class="mi">2</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="n">Wedge</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_col</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">center_row</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">pupil_at_ind</span><span class="o">.</span><span class="n">radius</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">WINDOW_RADIUS</span><span class="p">,</span><span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_window</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="p">),</span><span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_window</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">angle</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">WINDOW_RADIUS</span><span class="p">,</span><span class="n">fill</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">ec</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">window_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">video</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Frame </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">ind</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="frame_scroll"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.frame_scroll">[docs]</a><span class="k">def</span> <span class="nf">frame_scroll</span><span class="p">(</span><span class="n">video</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Allows user to scroll through video frames using the keyboard.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">                video : array_like</span>
+<span class="sd">                        video to scroll through</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">tracker</span> <span class="o">=</span> <span class="n">FrameTracker</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s1">&#39;key_press_event&#39;</span><span class="p">,</span> <span class="n">tracker</span><span class="o">.</span><span class="n">on_key</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="eyelid_scroll"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.eyelid_scroll">[docs]</a><span class="k">def</span> <span class="nf">eyelid_scroll</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">eyelid_list</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Overlays eyelid during frame scroll</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">                video : array_like</span>
+<span class="sd">                        video to scroll through</span>
+
+<span class="sd">                eyelid_list : dictionary</span>
+<span class="sd">                        dictionary of pupils where the key is the frame index and the value is the pupil.</span>
+<span class="sd">                        Does not need to include all video frames.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">tracker</span> <span class="o">=</span> <span class="n">EyelidTracker</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">,</span> <span class="n">eyelid_list</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s1">&#39;key_press_event&#39;</span><span class="p">,</span> <span class="n">tracker</span><span class="o">.</span><span class="n">on_key</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="pupil_scroll"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.pupil_scroll">[docs]</a><span class="k">def</span> <span class="nf">pupil_scroll</span><span class="p">(</span><span class="n">video</span><span class="p">,</span><span class="n">pupil_list</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Overlays pupil during frame scroll</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">                video : array_like</span>
+<span class="sd">                        video to scroll through</span>
+
+<span class="sd">                pupil_list : dictionary</span>
+<span class="sd">                        dictionary of pupils where the key is the frame index and the value is the pupil.</span>
+<span class="sd">                        Does not need to include all video frames.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">tracker</span> <span class="o">=</span> <span class="n">PupilTracker</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">,</span> <span class="n">pupil_list</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s1">&#39;key_press_event&#39;</span><span class="p">,</span> <span class="n">tracker</span><span class="o">.</span><span class="n">on_key</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="torsion_scroll"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.torsion_scroll">[docs]</a><span class="k">def</span> <span class="nf">torsion_scroll</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">pupil_list</span><span class="p">,</span> <span class="n">offset_first_frame</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Tracks torsion using rotating 2D axis during frame scroll.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">                video : array_like</span>
+<span class="sd">                        video to scroll through</span>
+
+<span class="sd">                pupil_list : dictionary</span>
+<span class="sd">                        dictionary of pupils where the key is the frame index and the value is the pupil.</span>
+<span class="sd">                        Does not need to include all video frames.</span>
+
+<span class="sd">                offset_first_frame : dictionary</span>
+<span class="sd">                        dictionary of rotation angles. key is the frame index and the value is the rotation.</span>
+<span class="sd">                        Does not need to include all video frames</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">tracker</span> <span class="o">=</span> <span class="n">TorsionTracker</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">,</span> <span class="n">pupil_list</span><span class="p">,</span> <span class="n">offset_first_frame</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s1">&#39;key_press_event&#39;</span><span class="p">,</span> <span class="n">tracker</span><span class="o">.</span><span class="n">on_key</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="polar_transform_scroll"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.polar_transform_scroll">[docs]</a><span class="k">def</span> <span class="nf">polar_transform_scroll</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">polar_transform_list</span><span class="p">):</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">tracker</span> <span class="o">=</span> <span class="n">PolarTransformTracker</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">,</span> <span class="n">polar_transform_list</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s1">&#39;key_press_event&#39;</span><span class="p">,</span> <span class="n">tracker</span><span class="o">.</span><span class="n">on_key</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="window_scroll"><a class="viewcode-back" href="../../../modules/ota.gui.html#ota.gui.frame_scroll.window_scroll">[docs]</a><span class="k">def</span> <span class="nf">window_scroll</span><span class="p">(</span><span class="n">video</span><span class="p">,</span><span class="n">pupil_list</span><span class="p">,</span><span class="n">offset_first_frame</span><span class="p">,</span><span class="n">theta_window</span><span class="p">,</span><span class="n">WINDOW_RADIUS</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Tracks window location during frame scroll.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">                video : array_like</span>
+<span class="sd">                        video to scroll through</span>
+
+<span class="sd">                pupil_list : dictionary</span>
+<span class="sd">                        dictionary of pupils where the key is the frame index and the value is the pupil.</span>
+<span class="sd">                        Does not need to include all video frames.</span>
+
+<span class="sd">                offset_first_frame : dictionary</span>
+<span class="sd">                        dictionary of rotation angles. key is the frame index and the value is the rotation.</span>
+<span class="sd">                        Does not need to include all video frames</span>
+
+<span class="sd">                theta_window : tuple of angles</span>
+<span class="sd">                        theta[0] is the lower bound of the window</span>
+<span class="sd">                        theta[1] is the upper bound of the window</span>
+
+<span class="sd">                WINDOW_RADIUS: integer</span>
+<span class="sd">                        Pixel width of the window radius</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">tracker</span> <span class="o">=</span> <span class="n">WindowTracker</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">video</span><span class="p">,</span> <span class="n">pupil_list</span><span class="p">,</span> <span class="n">offset_first_frame</span><span class="p">,</span> <span class="n">theta_window</span><span class="p">,</span><span class="n">WINDOW_RADIUS</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s1">&#39;key_press_event&#39;</span><span class="p">,</span> <span class="n">tracker</span><span class="o">.</span><span class="n">on_key</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Bryden Fogelman, Cyrus Neary, Sam Reid.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

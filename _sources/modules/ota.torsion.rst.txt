@@ -1,13 +1,6 @@
 Torsion
 ===================
 
-manual
--------------------------
-
-.. automodule:: ota.torsion.manual
-    :members:
-    :undoc-members:
-
 phase
 ------------------------
 

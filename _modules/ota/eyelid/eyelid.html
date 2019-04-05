@@ -1,0 +1,321 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>ota.eyelid.eyelid &#8212; Ocular-Torsion-Quantification 1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ota.eyelid.eyelid</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">pardir</span><span class="p">)))</span>
+
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">cProfile</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># import settings</span>
+<span class="c1"># from ota.helpers import plotting as plot</span>
+
+<span class="kn">from</span> <span class="nn">ota.video</span> <span class="k">import</span> <span class="n">video</span> <span class="k">as</span> <span class="n">vid</span>
+<span class="kn">from</span> <span class="nn">ota</span> <span class="k">import</span> <span class="n">presets</span>
+<span class="kn">from</span> <span class="nn">ota.pupil</span> <span class="k">import</span> <span class="n">pupil</span>
+<span class="kn">from</span> <span class="nn">ota.iris</span> <span class="k">import</span> <span class="n">iris</span>
+
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">reduce</span>
+
+<div class="viewcode-block" id="detect_eyelid"><a class="viewcode-back" href="../../../modules/ota.eyelid.html#ota.eyelid.eyelid.detect_eyelid">[docs]</a><span class="k">def</span> <span class="nf">detect_eyelid</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">pupil</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Detect the upper and lower eyelids within a video image</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    image : array_like</span>
+<span class="sd">        Grayscale video image containing eyelid to be detected</span>
+<span class="sd">    pupil: pupil object</span>
+<span class="sd">        Object representing the pupil within the given image</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    eyelids_removed : array_like</span>
+<span class="sd">        A video image with the parts above the upper eyelid and below the lower eyelid blocked out.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Define parameters to be used in eyelid detection</span>
+    <span class="n">ROI_STRIP_WIDTH</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ROI_STRIP_WIDTH&#39;</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span> <span class="c1"># Width of Region of Interest</span>
+    <span class="n">ROI_BUFFER</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ROI_BUFFER&#39;</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span> <span class="c1"># Buffer between pupil edge and start of Region of Interest</span>
+    <span class="n">LOWER_CANNY</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;LOWER_CANNY&#39;</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span> <span class="c1"># Lower threshold for canny edge detection</span>
+    <span class="n">UPPER_CANNY</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;UPPER_CANNY&#39;</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span> <span class="c1"># Upper threshold for canny edge detection</span>
+    <span class="n">min_theta</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;min_theta&#39;</span><span class="p">,</span> <span class="mi">70</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">)</span> <span class="c1"># Minimum angle for hough line search</span>
+    <span class="n">max_theta</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;max_theta&#39;</span><span class="p">,</span> <span class="mi">110</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">)</span> <span class="c1"># Maximum angle for hough line search</span>
+    <span class="n">POLY_DEG</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;POLY_DEG&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="c1"># Degree of polynomial to fit to eyelid points</span>
+    <span class="n">UPPER_LID_POLY_TRANS</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;UPPER_LID_POLY_TRANS&#39;</span><span class="p">,</span> <span class="mi">40</span><span class="p">)</span> <span class="c1"># Amount by which to translate upper lid down to more conservatively ensure coverage of entire lid</span>
+    <span class="n">LOWER_LID_POLY_TRANS</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;LOWER_LID_POLY_TRANS&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># Amount by which to translate lower lid up to more conservatively ensure coverage of entire lid</span>
+
+    <span class="c1"># Defined the image indices representing four regions of interest about the eye</span>
+    <span class="n">l_cols</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">center_col</span> <span class="o">-</span> <span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">radius</span> <span class="o">+</span> <span class="n">ROI_STRIP_WIDTH</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">center_col</span> <span class="o">-</span> <span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">radius</span> <span class="o">+</span> <span class="n">ROI_BUFFER</span><span class="p">))</span> <span class="p">)</span>
+    <span class="n">r_cols</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">center_col</span> <span class="o">+</span> <span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">radius</span> <span class="o">+</span> <span class="n">ROI_BUFFER</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">center_col</span> <span class="o">+</span> <span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">radius</span> <span class="o">+</span> <span class="n">ROI_STRIP_WIDTH</span><span class="p">)))</span>
+
+    <span class="n">u_rows</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">center_row</span> <span class="o">-</span> <span class="n">ROI_BUFFER</span><span class="p">))</span>
+    <span class="n">l_rows</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">center_row</span> <span class="o">+</span> <span class="n">ROI_BUFFER</span><span class="p">),</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="c1"># Create the 4 regions of interest: Upper left, Lower left, Upper right, Lower Right</span>
+    <span class="n">ul_img</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="n">u_rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">u_rows</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">l_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">l_cols</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">ll_img</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="n">l_rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">l_rows</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">l_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">l_cols</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">ur_img</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="n">u_rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">u_rows</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">r_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">r_cols</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">lr_img</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="n">l_rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">l_rows</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">r_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">r_cols</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+    <span class="c1"># Apply canny edge detection to the ROIs</span>
+    <span class="n">ul_canny</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">Canny</span><span class="p">(</span><span class="n">ul_img</span><span class="p">,</span> <span class="n">LOWER_CANNY</span><span class="p">,</span> <span class="n">UPPER_CANNY</span><span class="p">)</span>
+    <span class="n">ll_canny</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">Canny</span><span class="p">(</span><span class="n">ll_img</span><span class="p">,</span> <span class="n">LOWER_CANNY</span><span class="p">,</span> <span class="n">UPPER_CANNY</span><span class="p">)</span>
+    <span class="n">ur_canny</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">Canny</span><span class="p">(</span><span class="n">ur_img</span><span class="p">,</span> <span class="n">LOWER_CANNY</span><span class="p">,</span> <span class="n">UPPER_CANNY</span><span class="p">)</span>
+    <span class="n">lr_canny</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">Canny</span><span class="p">(</span><span class="n">lr_img</span><span class="p">,</span> <span class="n">LOWER_CANNY</span><span class="p">,</span> <span class="n">UPPER_CANNY</span><span class="p">)</span>
+
+    <span class="c1"># Apply a hough transform to each ROI</span>
+    <span class="n">ul_lines</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">HoughLines</span><span class="p">(</span><span class="n">ul_canny</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">min_theta</span><span class="o">=</span><span class="n">min_theta</span><span class="p">,</span> <span class="n">max_theta</span><span class="o">=</span><span class="n">max_theta</span><span class="p">)</span>
+    <span class="n">ll_lines</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">HoughLines</span><span class="p">(</span><span class="n">ll_canny</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">min_theta</span><span class="o">=</span><span class="n">min_theta</span><span class="p">,</span> <span class="n">max_theta</span><span class="o">=</span><span class="n">max_theta</span><span class="p">)</span>
+    <span class="n">ur_lines</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">HoughLines</span><span class="p">(</span><span class="n">ur_canny</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">min_theta</span><span class="o">=</span><span class="n">min_theta</span><span class="p">,</span> <span class="n">max_theta</span><span class="o">=</span><span class="n">max_theta</span><span class="p">)</span>
+    <span class="n">lr_lines</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">HoughLines</span><span class="p">(</span><span class="n">lr_canny</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">min_theta</span><span class="o">=</span><span class="n">min_theta</span><span class="p">,</span> <span class="n">max_theta</span><span class="o">=</span><span class="n">max_theta</span><span class="p">)</span>
+
+    <span class="c1"># Construct the detected line for each ROI individually</span>
+    <span class="n">lspace</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">1000</span><span class="p">,</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">ul_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">ul_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">a</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">b</span>
+    <span class="n">ul_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x0</span> <span class="o">+</span> <span class="n">lspace</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="n">b</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">ul_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y0</span> <span class="o">+</span> <span class="n">lspace</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">ur_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">ur_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">a</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">b</span>
+    <span class="n">ur_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x0</span> <span class="o">+</span> <span class="n">lspace</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="n">b</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">ur_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y0</span> <span class="o">+</span> <span class="n">lspace</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">lr_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">lr_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">a</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">b</span>
+    <span class="n">lr_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x0</span> <span class="o">+</span> <span class="n">lspace</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="n">b</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">lr_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y0</span> <span class="o">+</span> <span class="n">lspace</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">ll_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">ll_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">a</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">b</span>
+    <span class="n">ll_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x0</span> <span class="o">+</span> <span class="n">lspace</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="n">b</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">ll_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y0</span> <span class="o">+</span> <span class="n">lspace</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+
+
+    <span class="c1"># Only keep points of the detected lines that lie within the ROIs</span>
+    <span class="n">inds</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">,</span> <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ul_x</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ul_y</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">),</span>
+                                    <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ul_x</span> <span class="o">&lt;=</span> <span class="n">ul_img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ul_y</span> <span class="o">&lt;=</span> <span class="n">ul_img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">ul_x</span> <span class="o">=</span> <span class="n">ul_x</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span>
+    <span class="n">ul_y</span> <span class="o">=</span> <span class="n">ul_y</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span>
+
+    <span class="n">inds</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">,</span> <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ur_x</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ur_y</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">),</span>
+                                    <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ur_x</span> <span class="o">&lt;=</span> <span class="n">ur_img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ur_y</span> <span class="o">&lt;=</span> <span class="n">ur_img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">ur_x</span> <span class="o">=</span> <span class="n">ur_x</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span>
+    <span class="n">ur_y</span> <span class="o">=</span> <span class="n">ur_y</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span>
+
+    <span class="n">inds</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">,</span> <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">lr_x</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">lr_y</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">),</span>
+                                    <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">lr_x</span> <span class="o">&lt;=</span> <span class="n">lr_img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">lr_y</span> <span class="o">&lt;=</span> <span class="n">lr_img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">lr_x</span> <span class="o">=</span> <span class="n">lr_x</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span>
+    <span class="n">lr_y</span> <span class="o">=</span> <span class="n">lr_y</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span>
+
+    <span class="n">inds</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">,</span> <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ll_x</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ll_y</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">),</span>
+                                    <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ll_x</span> <span class="o">&lt;=</span> <span class="n">ll_img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ll_y</span> <span class="o">&lt;=</span> <span class="n">ll_img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">ll_x</span> <span class="o">=</span> <span class="n">ll_x</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span>
+    <span class="n">ll_y</span> <span class="o">=</span> <span class="n">ll_y</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span>
+
+    <span class="c1"># Put the coordinates of points on the lines back into the row,column space of the global image image</span>
+    <span class="c1"># Upper eyelid first</span>
+    <span class="n">ul_x</span> <span class="o">=</span> <span class="n">ul_x</span> <span class="o">+</span> <span class="n">l_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ul_y</span> <span class="o">=</span> <span class="n">ul_y</span> <span class="o">+</span> <span class="n">u_rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ur_x</span> <span class="o">=</span> <span class="n">ur_x</span> <span class="o">+</span> <span class="n">r_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ur_y</span> <span class="o">=</span> <span class="n">ur_y</span> <span class="o">+</span> <span class="n">u_rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ulid_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ul_x</span><span class="p">,</span> <span class="n">ur_x</span><span class="p">)</span>
+    <span class="n">ulid_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ul_y</span><span class="p">,</span> <span class="n">ur_y</span><span class="p">)</span>
+
+    <span class="c1"># Lower eyelid</span>
+    <span class="n">ll_x</span> <span class="o">=</span> <span class="n">ll_x</span> <span class="o">+</span> <span class="n">l_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ll_y</span> <span class="o">=</span> <span class="n">ll_y</span> <span class="o">+</span> <span class="n">l_rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">lr_x</span> <span class="o">=</span> <span class="n">lr_x</span> <span class="o">+</span> <span class="n">r_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">lr_y</span> <span class="o">=</span> <span class="n">lr_y</span> <span class="o">+</span> <span class="n">l_rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">llid_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ll_x</span><span class="p">,</span> <span class="n">lr_x</span><span class="p">)</span>
+    <span class="n">llid_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ll_y</span><span class="p">,</span> <span class="n">lr_y</span><span class="p">)</span>
+
+    <span class="c1"># Fit a polynomial to the upper and lower lids individually</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">ulid_x</span><span class="p">,</span> <span class="n">ulid_y</span><span class="p">,</span> <span class="n">POLY_DEG</span><span class="p">)</span>
+    <span class="n">z</span><span class="p">[</span><span class="n">POLY_DEG</span><span class="p">]</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="n">POLY_DEG</span><span class="p">]</span> <span class="o">+</span> <span class="n">UPPER_LID_POLY_TRANS</span> <span class="c1"># Translate the estimated eyelid down.</span>
+    <span class="n">ulid_poly</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">poly1d</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+    <span class="n">ulid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ulid_poly</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">llid_x</span><span class="p">,</span> <span class="n">llid_y</span><span class="p">,</span> <span class="n">POLY_DEG</span><span class="p">)</span>
+    <span class="n">z</span><span class="p">[</span><span class="n">POLY_DEG</span><span class="p">]</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="n">POLY_DEG</span><span class="p">]</span> <span class="o">-</span> <span class="n">LOWER_LID_POLY_TRANS</span><span class="c1"># Translate the estimated eyelid up.</span>
+    <span class="n">llid_poly</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">poly1d</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+    <span class="n">llid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">llid_poly</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+
+    <span class="n">eyelids_removed</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="c1"># for each index value in ulid and llid</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ulid</span><span class="p">)):</span>
+        <span class="c1"># set the parts of the image above and below the eyelid to 0</span>
+        <span class="k">if</span> <span class="n">ulid</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">eyelids_removed</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">ulid</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">llid</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">eyelids_removed</span><span class="p">[</span><span class="n">llid</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">return</span> <span class="n">eyelids_removed</span></div>
+
+<div class="viewcode-block" id="pupil_obstruct"><a class="viewcode-back" href="../../../modules/ota.eyelid.html#ota.eyelid.eyelid.pupil_obstruct">[docs]</a><span class="k">def</span> <span class="nf">pupil_obstruct</span><span class="p">(</span><span class="n">eyelid_mat</span><span class="p">,</span> <span class="n">contour</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine if the pupil is obstructed (ie. blinks)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    eyelid_mat : array_like</span>
+<span class="sd">        An image with the eyelids removed</span>
+<span class="sd">        </span>
+<span class="sd">    contour: array_like</span>
+<span class="sd">        The contour of the pupil of the eye.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    pupil_obstructed : int</span>
+<span class="sd">        1 if the pupil is obstructed. 0 if not.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># If things are None, abort mission</span>
+    <span class="k">if</span> <span class="n">eyelid_mat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">contour</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+     <span class="c1"># Find locations where eyelid exists</span>
+    <span class="n">indices_zero</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">eyelid_mat</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+
+     <span class="c1"># If there is no eyelid, just abort</span>
+    <span class="k">if</span> <span class="n">indices_zero</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">indices_zero</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="n">eyelid_locs</span> <span class="o">=</span> <span class="p">[(</span><span class="n">indices_zero</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">indices_zero</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices_zero</span><span class="p">))]</span>
+
+     <span class="c1"># Get the contour into proper form: set of tuples (row, col)</span>
+    <span class="n">contour</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">contour</span><span class="p">)</span>
+    <span class="n">contour</span> <span class="o">=</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">contour</span><span class="p">]</span>
+
+     <span class="c1"># Find the intersection between pupil contour and eyelid locations (intersection of 4 pixels)</span>
+    <span class="n">intersection</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">contour</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">eyelid_locs</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">intersection</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="mi">1</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">Ocular-Torsion-Quantification</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.torsion.html">Torsion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.iris.html">ota.iris package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.pupil.html">ota.pupil package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.video.html">ota.video package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.eyelid.html">ota.eyelid package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.data.html">ota.data package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.gui.html">ota.gui package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.execution.html">ota.execution package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Zara Lim, Esther Lin.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,19 +1,17 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>ota.execution package &#8212; ota 1.0 documentation</title>
+    <meta charset="utf-8" />
+    <title>ota.execution package &#8212; Ocular-Torsion-Quantification 1.0 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="prev" title="ota.gui package" href="ota.gui.html" />
@@ -29,6 +27,8 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <div class="section" id="ota-execution-package">
@@ -36,11 +36,118 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="ota-execution-pupil-locate-module">
-<h2>ota.execution.pupil_locate module<a class="headerlink" href="#ota-execution-pupil-locate-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-ota.execution.pupil_locate">
+<span id="ota-execution-pupil-locate-module"></span><h2>ota.execution.pupil_locate module<a class="headerlink" href="#module-ota.execution.pupil_locate" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="ota.execution.pupil_locate.construct_pupil_list">
+<code class="descclassname">ota.execution.pupil_locate.</code><code class="descname">construct_pupil_list</code><span class="sig-paren">(</span><em>video</em>, <em>first_frame</em>, <em>last_frame</em>, <em>threshold=10</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/execution/pupil_locate.html#construct_pupil_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.execution.pupil_locate.construct_pupil_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a dictionary of pupil objects for a series of video frames.</p>
+<dl class="simple">
+<dt>Inputs:</dt><dd><p>video - video object
+first_frame - Integer representing index of first frame to analyze.
+last_frame - Integer representing index of last frame to analyze.</p>
+</dd>
+<dt>Outputs:</dt><dd><p>pupil_list: Dictionary of pupil objects where the key is the frame number and the value is the pupil object.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
-<div class="section" id="ota-execution-torsion-quant-2dx-module">
-<h2>ota.execution.torsion_quant_2DX module<a class="headerlink" href="#ota-execution-torsion-quant-2dx-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-ota.execution.torsion_quant_2DX">
+<span id="ota-execution-torsion-quant-2dx-module"></span><h2>ota.execution.torsion_quant_2DX module<a class="headerlink" href="#module-ota.execution.torsion_quant_2DX" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="ota.execution.torsion_quant_2DX.quantify_torsion">
+<code class="descclassname">ota.execution.torsion_quant_2DX.</code><code class="descname">quantify_torsion</code><span class="sig-paren">(</span><em>WINDOW_RADIUS</em>, <em>RESOLUTION</em>, <em>torsion_mode</em>, <em>transform_mode</em>, <em>video</em>, <em>start_frame</em>, <em>reference_frame</em>, <em>end_frame</em>, <em>pupil_list</em>, <em>blink_list</em>, <em>threshold</em>, <em>WINDOW_THETA=None</em>, <em>SEGMENT_THETA=None</em>, <em>upper_iris=None</em>, <em>lower_iris=None</em>, <em>feature_coords=None</em>, <em>calibration_frame=None</em>, <em>calibration_angle=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/execution/torsion_quant_2DX.html#quantify_torsion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.execution.torsion_quant_2DX.quantify_torsion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utilizes the 2D cross correlation algorithm xcorr2d to measure and return torsion using the settings given.</p>
+<dl>
+<dt>Inputs:</dt><dd><dl>
+<dt>WINDOW_RADIUS:</dt><dd><p>Integer
+Mandatory input which sets the radial thickness of the iris transform.</p>
+</dd>
+<dt>RESOLUTION:</dt><dd><p>Double
+Mandatory input with sets the upsampling factor or the interpolation resolution depending on settings below.</p>
+</dd>
+<dt>torsion_mode:</dt><dd><p>String
+Mandatory input which determines whether interpolation or upsampling is used.
+if torsion_mode = ‘interp’, then interpolation is used and RESOLUTION is assumed to be interpolation resolution. Consequently an upsampling factor of 1 is used in the transform.
+if torsion_mode = ‘upsample’, then upsampling is used and RESOLUTION is assumed to be the upsampling factor.</p>
+</dd>
+<dt>transform_mode:</dt><dd><p>String
+Mandatory input which determines whether a subset of the iris is used or the full iris is used during correlation.
+if transform_mode = ‘subset’, a subset of the iris is used.
+if transform_mode = ‘full’, the full iris us used.</p>
+</dd>
+<dt>video:</dt><dd><p>Video object
+Mandatory input</p>
+</dd>
+<dt>start_frame:</dt><dd><p>Integer
+Mandatory input which is the index of the first frame to analyze.</p>
+</dd>
+<dt>reference_frame:</dt><dd><p>Integer
+Mandatory input which is the index of the reference frame.</p>
+</dd>
+<dt>end_frame:</dt><dd><p>Integer
+Mandatory input which is the index of the last frame to analyze.</p>
+</dd>
+<dt>pupil_list:</dt><dd><p>dictionary of pupil objects
+key: (int) video frame
+value: pupil object</p>
+</dd>
+<dt>blink_list:</dt><dd><p>dictionary of whether or not a frame captures a blink
+key: (int) video frame
+value: 1 - blink</p>
+<blockquote>
+<div><p>0 - no blink
+None - None</p>
+</div></blockquote>
+</dd>
+<dt>threshold:</dt><dd><p>Integer
+The pupil colour threshold</p>
+</dd>
+<dt>WINDOW_THETA:</dt><dd><p>Integer
+Angle bounds above/below the feature that define the portion of the iris that is to be included in the reference iris window. This window should be smaller than the segment.
+Mandatory input if transform_mode = ‘subset’.</p>
+</dd>
+<dt>SEGMENT_THETA:</dt><dd><p>Integer
+Angle bounds above/below the feature that define the portion of the iris that is to be included in each segment, for which the window is to be located in.
+Mandatory input if transform_mode = ‘subset’.</p>
+</dd>
+<dt>upper_iris_occ:</dt><dd><p>dictionary, {‘c’: column index, ‘r’: row index}
+Holds the [row,column] coordinates of the upper boundary of the iris that is not occluded by eyelids or eyelashes.</p>
+</dd>
+<dt>lower_iris_occ:</dt><dd><p>dictionary, {‘c’: column index, ‘r’: row index}
+Holds the [row,column] coordinates of the lower boundary of the iris that is not occluded by eyelids or eyelashes.</p>
+</dd>
+<dt>feature_coords:</dt><dd><p>dictionary, {‘c’: column index, ‘r’: row index}
+Holds the dictionary of feature coordinates tracked during subset correlation.
+Mandatory input if transform_mode = ‘subset’.</p>
+</dd>
+<dt>calibration_frame:</dt><dd><p>Integer
+The frame used for calibration</p>
+</dd>
+<dt>calibration_angle:</dt><dd><p>Double
+The angle the eye is rotated in the calibration frame</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>torsion:</dt><dd><p>Dictionary
+key = frame number
+value = rotation from reference frame</p>
+</dd>
+<dt>torsion_deriative:</dt><dd><p>Dictionary
+key = frame number
+value = rotation from previous frame</p>
+</dd>
+<dt>transformed_iris</dt><dd><p>Dictionary
+key = frame number
+value = image of polar transformed iris</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 <div class="section" id="module-ota.execution">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-ota.execution" title="Permalink to this headline">¶</a></h2>
@@ -49,20 +156,40 @@
 
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="../index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">ota.execution package</a><ul>
-<li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#ota-execution-pupil-locate-module">ota.execution.pupil_locate module</a></li>
-<li><a class="reference internal" href="#ota-execution-torsion-quant-2dx-module">ota.execution.torsion_quant_2DX module</a></li>
-<li><a class="reference internal" href="#module-ota.execution">Module contents</a></li>
+<h1 class="logo"><a href="../index.html">Ocular-Torsion-Quantification</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.torsion.html">Torsion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.iris.html">ota.iris package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.pupil.html">ota.pupil package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.video.html">ota.video package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.eyelid.html">ota.eyelid package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.data.html">ota.data package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.gui.html">ota.gui package</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ota.execution package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-ota.execution.pupil_locate">ota.execution.pupil_locate module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-ota.execution.torsion_quant_2DX">ota.execution.torsion_quant_2DX module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-ota.execution">Module contents</a></li>
 </ul>
 </li>
 </ul>
+
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
@@ -71,35 +198,34 @@
   </ul></li>
 </ul>
 </div>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/modules/ota.execution.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
         </div>
       </div>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2018, Bryden Fogelman, Cyrus Neary, Sam Reid.
+      &copy;2019, Zara Lim, Esther Lin.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="../_sources/modules/ota.execution.rst.txt"

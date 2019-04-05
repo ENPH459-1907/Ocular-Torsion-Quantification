@@ -1,19 +1,17 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Torsion &#8212; ota 1.0 documentation</title>
+    <meta charset="utf-8" />
+    <title>Torsion &#8212; Ocular-Torsion-Quantification 1.0 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="ota.iris package" href="ota.iris.html" />
@@ -30,13 +28,12 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <div class="section" id="torsion">
 <h1>Torsion<a class="headerlink" href="#torsion" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="manual">
-<h2>manual<a class="headerlink" href="#manual" title="Permalink to this headline">¶</a></h2>
-</div>
 <div class="section" id="phase">
 <h2>phase<a class="headerlink" href="#phase" title="Permalink to this headline">¶</a></h2>
 </div>
@@ -53,27 +50,239 @@
 <dd></dd></dl>
 
 </div>
-<div class="section" id="xcorr2d">
-<h2>xcorr2d<a class="headerlink" href="#xcorr2d" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-ota.torsion.xcorr2d">
+<span id="xcorr2d"></span><h2>xcorr2d<a class="headerlink" href="#module-ota.torsion.xcorr2d" title="Permalink to this headline">¶</a></h2>
+<p>Method to calculate the 2D cross correlation between two images.</p>
+<dl class="exception">
+<dt id="ota.torsion.xcorr2d.CorrelationBelowThreshold">
+<em class="property">exception </em><code class="descclassname">ota.torsion.xcorr2d.</code><code class="descname">CorrelationBelowThreshold</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/torsion/xcorr2d.html#CorrelationBelowThreshold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.torsion.xcorr2d.CorrelationBelowThreshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Correlation must be above a certain threshold.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="ota.torsion.xcorr2d.InputParameterError">
+<em class="property">exception </em><code class="descclassname">ota.torsion.xcorr2d.</code><code class="descname">InputParameterError</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/torsion/xcorr2d.html#InputParameterError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.torsion.xcorr2d.InputParameterError" title="Permalink to this definition">¶</a></dt>
+<dd><p>General error for correlation methods with incorrect parameters.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="ota.torsion.xcorr2d.LackingInterpPoints">
+<em class="property">exception </em><code class="descclassname">ota.torsion.xcorr2d.</code><code class="descname">LackingInterpPoints</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/torsion/xcorr2d.html#LackingInterpPoints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.torsion.xcorr2d.LackingInterpPoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Need more then 3 points in order to interpolate.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="ota.torsion.xcorr2d.LengthMismatch">
+<em class="property">exception </em><code class="descclassname">ota.torsion.xcorr2d.</code><code class="descname">LengthMismatch</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/torsion/xcorr2d.html#LengthMismatch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.torsion.xcorr2d.LengthMismatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Arrays must be the same length.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ota.torsion.xcorr2d.corr2_coeff">
+<code class="descclassname">ota.torsion.xcorr2d.</code><code class="descname">corr2_coeff</code><span class="sig-paren">(</span><em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/torsion/xcorr2d.html#corr2_coeff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.torsion.xcorr2d.corr2_coeff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Caclulates the 2D correlation coefficient of two matrices. Raise an exception
+if a and b are not the same size.</p>
+<p>The coefficient is calculated using the following formula:
+<a class="reference external" href="https://www.mathworks.com/help/images/ref/corr2.html">https://www.mathworks.com/help/images/ref/corr2.html</a>.</p>
+<blockquote>
+<div><p>a : array_like, NxM
+b : array_like, NxM</p>
+</div></blockquote>
+<blockquote>
+<div><dl class="simple">
+<dt>coeff<span class="classifier">float, 0 =&lt; x =&lt; 1</span></dt><dd><p>2D correlation coefficient.</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="ota.torsion.xcorr2d.corr_interp">
+<code class="descclassname">ota.torsion.xcorr2d.</code><code class="descname">corr_interp</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>start</em>, <em>interp_resolution</em>, <em>kind='quadratic'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/torsion/xcorr2d.html#corr_interp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.torsion.xcorr2d.corr_interp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolate a list of correlation values and return the amount of rotation
+on a finer grid.</p>
+<dl class="simple">
+<dt>x<span class="classifier">array_like</span></dt><dd><p>Indices location of the accepted correlation values relative to the
+original location in corrs.</p>
+</dd>
+<dt>y<span class="classifier">array_like</span></dt><dd><p>Correlation values that are between lb and ub that are above the threshold.</p>
+</dd>
+<dt>start<span class="classifier">int</span></dt><dd><p>Starting index location of the window.</p>
+</dd>
+<dt>interp_resolution<span class="classifier">float</span></dt><dd><p>Resultion of the interpolated correlation function.</p>
+</dd>
+<dt>kind<span class="classifier">optional, str</span></dt><dd><p>Type of piecewise interpolation function. See scipy.interpolate.interp1d
+for more details.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>deg<span class="classifier">float</span></dt><dd><p>The amount of rotation after interpolation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="ota.torsion.xcorr2d.corr_upsample">
+<code class="descclassname">ota.torsion.xcorr2d.</code><code class="descname">corr_upsample</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>start</em>, <em>upsample_resolution</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/torsion/xcorr2d.html#corr_upsample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.torsion.xcorr2d.corr_upsample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the maximum correlation using the upsampling method.</p>
+<dl class="simple">
+<dt>x<span class="classifier">array_like</span></dt><dd><p>Indices location of the accepted correlation values relative to the
+original location in corrs.</p>
+</dd>
+<dt>y<span class="classifier">array_like</span></dt><dd><p>Correlation values that are between lb and ub that are above the threshold.</p>
+</dd>
+<dt>start<span class="classifier">int</span></dt><dd><p>Starting index location of the window.</p>
+</dd>
+<dt>upsample_resolution<span class="classifier">float</span></dt><dd><p>Resultion of the upsampled iris segment.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>deg<span class="classifier">float</span></dt><dd><p>The amount of rotation using an upsampled image.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="ota.torsion.xcorr2d.reduced_corr">
+<code class="descclassname">ota.torsion.xcorr2d.</code><code class="descname">reduced_corr</code><span class="sig-paren">(</span><em>corrs</em>, <em>threshold</em>, <em>lb=0</em>, <em>ub=None</em>, <em>offset=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/torsion/xcorr2d.html#reduced_corr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.torsion.xcorr2d.reduced_corr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of correlation values between a lower bound and upper bound
+that only includes the values above the threshold. If there is no correlation
+found greater then the threshold within the bounds then CorrelationBelowThreshold
+exception is raised. If there is not enough points founds for interpolation
+then LackingInterpPoints is raised. See scipy.interpolate.interp1d for more
+details.</p>
+<dl class="simple">
+<dt>corrs<span class="classifier">float list</span></dt><dd><p>List of correlation values.</p>
+</dd>
+<dt>threshold<span class="classifier">float, 0 =&lt; x &lt; 1</span></dt><dd><p>Minimum correlation value of correlation, all correlation values less
+then threshold will be ignored.</p>
+</dd>
+<dt>lb<span class="classifier">int, 0 &lt;= x &lt; ub, default = 0</span></dt><dd><p>Lower bound.</p>
+</dd>
+<dt>ub<span class="classifier">int lb &lt; x &lt; len(corrs), default = len(corrs) - 1</span></dt><dd><p>Upper bound.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>x<span class="classifier">array_like</span></dt><dd><p>Indices location of the accepted correlation values relative to the
+original location in corrs.</p>
+</dd>
+<dt>y<span class="classifier">array_like</span></dt><dd><p>Correlation values that are between lb and ub that are above the threshold.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="ota.torsion.xcorr2d.xcorr2d">
+<code class="descclassname">ota.torsion.xcorr2d.</code><code class="descname">xcorr2d</code><span class="sig-paren">(</span><em>iris_seg</em>, <em>reference_window</em>, <em>start=0</em>, <em>prev_deg=None</em>, <em>torsion_mode='interp'</em>, <em>resolution=1</em>, <em>threshold=0</em>, <em>max_angle=25</em>, <em>verborose=False</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/torsion/xcorr2d.html#xcorr2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.torsion.xcorr2d.xcorr2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a pseduo 2D cross correlation method to calculate the relative shift
+between features in the given iris segment and a reference window. A moving
+window is taken from the current iris segment and the 2D correlation coefficient
+is calculated between the two matrices. Relative to other image convolution
+methods, in this function the window only moves along one axis (columns) but the
+correlation coefficient is calculated in two dimensions.</p>
+<p>There are two different methods of performing the cross correlation: ‘full’ or
+‘subset’. In both methods, the maximum torsion is limited to +- 25 degrees to
+decrease the total number of comparisions required. The ‘subset’ method involves
+less comparisions but is less robust then the ‘full’ method as less points are
+used to calculate the correlation coefficient.</p>
+<dl class="simple">
+<dt>‘subset’ - A smaller subset of the original segment is considered as the reference</dt><dd><p>window. A window of the same size is taken from the current iris segement
+and the correlation coefficient is then computed.’</p>
+</dd>
+<dt>‘full’ - The reference window is extended by the maximum torsion angle (25 deg)</dt><dd><p>and the full iris segment is used as the moving window. The size of the
+moving window is equal to the size of the iris segment.</p>
+</dd>
+</dl>
+<p>There are two modes for quantifying the torsion: ‘interp’ and ‘upsample’.</p>
+<dl class="simple">
+<dt>‘interp’ - Interpolates the cross correlation coefficient values.</dt><dd><p>See ‘corr_interp’ for more details.</p>
+</dd>
+<dt>‘upsample’ - Used when passing an iris segment that has been upsampled.</dt><dd><p>To accurately calculate the torsion, the resulotion must be equal to the
+upsampled resolution or the iris segment.</p>
+</dd>
+<dt>See ‘corr_upsample’</dt><dd><p>for more details.</p>
+</dd>
+</dl>
+<dl>
+<dt>iris_seg<span class="classifier">2D array_like NxM</span></dt><dd><p>Unwrapped iris segment, in polar coordinates.</p>
+</dd>
+<dt>reference_window<span class="classifier">2D array_like NxK</span></dt><dd><p>Intial window used as the reference for all rotation.</p>
+<p>Depending on the size of the reference window relative to the iris_seg,
+a different torsion_mode will be used to perform the cross correlation.</p>
+<dl class="simple">
+<dt>‘subset’ - If K &lt; M then a window of size NxK is taken from the iris</dt><dd><p>segment and compared against the reference window. In total there
+is M - K possible windows available from the iris segment.</p>
+</dd>
+<dt>‘full’ - If K &gt;= M then the window will be the iris segement and the</dt><dd><p>size of the window will be unmodified. The size of reference
+window should be K = M + 2 * max angle of torsion. The iris segement is
+then shifted 2 * max angle across the the reference window in order to
+perform the cross correlation.</p>
+</dd>
+</dl>
+</dd>
+<dt>start<span class="classifier">int, default = 0</span></dt><dd><p>Starting index location of the window. Leave start as 0 for ‘full’ method.</p>
+</dd>
+<dt>prev_deg<span class="classifier">float</span></dt><dd><p>Previous rotation angle. If an error occurs, the method will default
+to prev_deg.</p>
+</dd>
+<dt>torsion_mode<span class="classifier">optional, str {‘interp’, ‘upsample’}</span></dt><dd><p>Select the operation torsion_mode. ‘interp’ will interpolate the Correlation
+result. ‘upsample’ assumes the input iris_seg has been upsampled by a
+specific resolution.</p>
+</dd>
+<dt>resolution<span class="classifier">float, 0 &lt; x &lt; 1, default = 1</span></dt><dd><p>‘interp’ - The resolution will define dx for the interpolated function.
+‘upsample’ - The resolution corresponds to the upsampled resolution.</p>
+</dd>
+<dt>threshold<span class="classifier">float, 0 =&lt; x &lt; 1, default = 0</span></dt><dd><p>Minimum correlation value of correlation, all correlation values less
+then threshold will be ignored.</p>
+</dd>
+<dt>max_angle<span class="classifier">float 0 =&lt; x &lt; 360, default = 25</span></dt><dd><p>The maximum angle of rotation of the eye. Only values within + and -
+max_angle will be considered.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>deg<span class="classifier">float (in degrees)</span></dt><dd><p>The amount of rotation of the iris relative to the reference window.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 </div>
 
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="../index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Torsion</a><ul>
-<li><a class="reference internal" href="#manual">manual</a></li>
-<li><a class="reference internal" href="#phase">phase</a></li>
-<li><a class="reference internal" href="#module-ota.torsion.xcorr1d">xcorr1d</a></li>
-<li><a class="reference internal" href="#xcorr2d">xcorr2d</a></li>
+<h1 class="logo"><a href="../index.html">Ocular-Torsion-Quantification</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Torsion</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#phase">phase</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-ota.torsion.xcorr1d">xcorr1d</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-ota.torsion.xcorr2d">xcorr2d</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="ota.iris.html">ota.iris package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.pupil.html">ota.pupil package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.video.html">ota.video package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.eyelid.html">ota.eyelid package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.data.html">ota.data package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.gui.html">ota.gui package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.execution.html">ota.execution package</a></li>
 </ul>
+
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
@@ -83,35 +292,34 @@
   </ul></li>
 </ul>
 </div>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/modules/ota.torsion.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
         </div>
       </div>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2018, Bryden Fogelman, Cyrus Neary, Sam Reid.
+      &copy;2019, Zara Lim, Esther Lin.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="../_sources/modules/ota.torsion.rst.txt"

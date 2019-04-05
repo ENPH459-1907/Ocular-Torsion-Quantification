@@ -1,0 +1,405 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>ota.execution.torsion_quant_2DX &#8212; Ocular-Torsion-Quantification 1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ota.execution.torsion_quant_2DX</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">ota.video</span> <span class="k">import</span> <span class="n">video</span> <span class="k">as</span> <span class="n">vid</span>
+<span class="kn">from</span> <span class="nn">ota.torsion</span> <span class="k">import</span> <span class="n">xcorr2d</span>
+<span class="kn">from</span> <span class="nn">ota.pupil</span> <span class="k">import</span> <span class="n">pupil</span>
+<span class="kn">from</span> <span class="nn">ota.iris</span> <span class="k">import</span> <span class="n">iris</span><span class="p">,</span> <span class="n">eyelid_removal</span>
+<span class="kn">from</span> <span class="nn">ota</span> <span class="k">import</span> <span class="n">presets</span> <span class="k">as</span> <span class="n">pre</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="k">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="o">*</span>
+
+<div class="viewcode-block" id="quantify_torsion"><a class="viewcode-back" href="../../../modules/ota.execution.html#ota.execution.torsion_quant_2DX.quantify_torsion">[docs]</a><span class="k">def</span> <span class="nf">quantify_torsion</span><span class="p">(</span>
+    <span class="n">WINDOW_RADIUS</span><span class="p">,</span>
+    <span class="n">RESOLUTION</span><span class="p">,</span>
+    <span class="n">torsion_mode</span><span class="p">,</span>
+    <span class="n">transform_mode</span><span class="p">,</span>
+    <span class="n">video</span><span class="p">,</span>
+    <span class="n">start_frame</span><span class="p">,</span>
+    <span class="n">reference_frame</span><span class="p">,</span>
+    <span class="n">end_frame</span><span class="p">,</span>
+    <span class="n">pupil_list</span><span class="p">,</span>
+    <span class="n">blink_list</span><span class="p">,</span>
+    <span class="n">threshold</span><span class="p">,</span>
+    <span class="n">WINDOW_THETA</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">SEGMENT_THETA</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">upper_iris</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lower_iris</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">feature_coords</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">calibration_frame</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">calibration_angle</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Utilizes the 2D cross correlation algorithm xcorr2d to measure and return torsion using the settings given.</span>
+
+<span class="sd">    Inputs:</span>
+<span class="sd">        WINDOW_RADIUS:</span>
+<span class="sd">            Integer</span>
+<span class="sd">            Mandatory input which sets the radial thickness of the iris transform.</span>
+
+<span class="sd">        RESOLUTION:</span>
+<span class="sd">            Double</span>
+<span class="sd">            Mandatory input with sets the upsampling factor or the interpolation resolution depending on settings below.</span>
+
+<span class="sd">        torsion_mode:</span>
+<span class="sd">            String</span>
+<span class="sd">            Mandatory input which determines whether interpolation or upsampling is used.</span>
+<span class="sd">            if torsion_mode = &#39;interp&#39;, then interpolation is used and RESOLUTION is assumed to be interpolation resolution. Consequently an upsampling factor of 1 is used in the transform.</span>
+<span class="sd">            if torsion_mode = &#39;upsample&#39;, then upsampling is used and RESOLUTION is assumed to be the upsampling factor.</span>
+
+<span class="sd">        transform_mode:</span>
+<span class="sd">            String</span>
+<span class="sd">            Mandatory input which determines whether a subset of the iris is used or the full iris is used during correlation.</span>
+<span class="sd">            if transform_mode = &#39;subset&#39;, a subset of the iris is used.</span>
+<span class="sd">            if transform_mode = &#39;full&#39;, the full iris us used.</span>
+
+<span class="sd">        video:</span>
+<span class="sd">            Video object</span>
+<span class="sd">            Mandatory input</span>
+
+<span class="sd">        start_frame:</span>
+<span class="sd">            Integer</span>
+<span class="sd">            Mandatory input which is the index of the first frame to analyze.</span>
+
+<span class="sd">        reference_frame:</span>
+<span class="sd">            Integer</span>
+<span class="sd">            Mandatory input which is the index of the reference frame.</span>
+
+<span class="sd">        end_frame:</span>
+<span class="sd">            Integer</span>
+<span class="sd">            Mandatory input which is the index of the last frame to analyze.</span>
+
+<span class="sd">        pupil_list:</span>
+<span class="sd">            dictionary of pupil objects</span>
+<span class="sd">            key: (int) video frame</span>
+<span class="sd">            value: pupil object</span>
+
+<span class="sd">        blink_list:</span>
+<span class="sd">            dictionary of whether or not a frame captures a blink</span>
+<span class="sd">            key: (int) video frame</span>
+<span class="sd">            value: 1 - blink</span>
+<span class="sd">                   0 - no blink</span>
+<span class="sd">                   None - None</span>
+
+<span class="sd">        threshold:</span>
+<span class="sd">            Integer</span>
+<span class="sd">            The pupil colour threshold</span>
+
+<span class="sd">        WINDOW_THETA:</span>
+<span class="sd">            Integer</span>
+<span class="sd">            Angle bounds above/below the feature that define the portion of the iris that is to be included in the reference iris window. This window should be smaller than the segment.</span>
+<span class="sd">            Mandatory input if transform_mode = &#39;subset&#39;.</span>
+
+<span class="sd">        SEGMENT_THETA:</span>
+<span class="sd">            Integer</span>
+<span class="sd">            Angle bounds above/below the feature that define the portion of the iris that is to be included in each segment, for which the window is to be located in.</span>
+<span class="sd">            Mandatory input if transform_mode = &#39;subset&#39;.</span>
+
+<span class="sd">        upper_iris_occ:</span>
+<span class="sd">            dictionary, {&#39;c&#39;: column index, &#39;r&#39;: row index}</span>
+<span class="sd">            Holds the [row,column] coordinates of the upper boundary of the iris that is not occluded by eyelids or eyelashes.</span>
+
+<span class="sd">        lower_iris_occ:</span>
+<span class="sd">            dictionary, {&#39;c&#39;: column index, &#39;r&#39;: row index}</span>
+<span class="sd">            Holds the [row,column] coordinates of the lower boundary of the iris that is not occluded by eyelids or eyelashes.</span>
+
+<span class="sd">        feature_coords:</span>
+<span class="sd">            dictionary, {&#39;c&#39;: column index, &#39;r&#39;: row index}</span>
+<span class="sd">            Holds the dictionary of feature coordinates tracked during subset correlation.</span>
+<span class="sd">            Mandatory input if transform_mode = &#39;subset&#39;.</span>
+
+<span class="sd">        calibration_frame:</span>
+<span class="sd">            Integer</span>
+<span class="sd">            The frame used for calibration</span>
+
+<span class="sd">        calibration_angle:</span>
+<span class="sd">            Double</span>
+<span class="sd">            The angle the eye is rotated in the calibration frame</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        torsion:</span>
+<span class="sd">            Dictionary</span>
+<span class="sd">            key = frame number</span>
+<span class="sd">            value = rotation from reference frame</span>
+<span class="sd">        torsion_deriative:</span>
+<span class="sd">            Dictionary</span>
+<span class="sd">            key = frame number</span>
+<span class="sd">            value = rotation from previous frame</span>
+<span class="sd">        transformed_iris</span>
+<span class="sd">            Dictionary</span>
+<span class="sd">            key = frame number</span>
+<span class="sd">            value = image of polar transformed iris</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">upsample_factor</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">noise_replace</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="n">torsion_mode</span> <span class="o">==</span> <span class="s1">&#39;interp&#39;</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">elif</span> <span class="n">torsion_mode</span> <span class="o">==</span> <span class="s1">&#39;upsample&#39;</span><span class="p">:</span>
+        <span class="n">upsample_factor</span> <span class="o">=</span> <span class="n">RESOLUTION</span>
+
+    <span class="k">if</span> <span class="n">transform_mode</span> <span class="o">==</span> <span class="s1">&#39;subset&#39;</span><span class="p">:</span>
+        <span class="n">feature_r</span><span class="p">,</span> <span class="n">feature_theta</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">get_polar_coord</span><span class="p">(</span><span class="n">feature_coords</span><span class="p">[</span><span class="s1">&#39;r&#39;</span><span class="p">],</span> <span class="n">feature_coords</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">],</span> <span class="n">pupil_list</span><span class="p">[</span><span class="n">start_frame</span><span class="p">])</span>
+        <span class="n">reference_bounds</span> <span class="o">=</span> <span class="p">(</span><span class="n">feature_theta</span> <span class="o">-</span> <span class="n">WINDOW_THETA</span><span class="p">,</span> <span class="n">feature_theta</span> <span class="o">+</span> <span class="n">WINDOW_THETA</span><span class="p">)</span>
+        <span class="n">comparison_bounds</span> <span class="o">=</span> <span class="p">(</span><span class="n">feature_theta</span> <span class="o">-</span> <span class="n">SEGMENT_THETA</span><span class="p">,</span> <span class="n">feature_theta</span> <span class="o">+</span> <span class="n">SEGMENT_THETA</span><span class="p">)</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">SEGMENT_THETA</span> <span class="o">-</span> <span class="n">WINDOW_THETA</span><span class="p">)</span><span class="o">/</span><span class="n">upsample_factor</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">transform_mode</span> <span class="o">==</span> <span class="s1">&#39;full&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">upper_iris</span> <span class="ow">and</span> <span class="n">lower_iris</span><span class="p">:</span>
+            <span class="n">noise_replace</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">reference_bounds</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">360</span><span class="p">)</span>
+        <span class="n">comparison_bounds</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">360</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">transform_mode</span> <span class="o">==</span> <span class="s1">&#39;alternate&#39;</span><span class="p">:</span>
+        <span class="c1"># Get the aspects as if you were doing a full iris analysis</span>
+        <span class="k">if</span> <span class="n">upper_iris</span> <span class="ow">and</span> <span class="n">lower_iris</span><span class="p">:</span>
+            <span class="n">noise_replace</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">reference_bounds</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">360</span><span class="p">)</span> <span class="c1"># what are these? 360 degrees?</span>
+        <span class="n">comparison_bounds</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">360</span><span class="p">)</span>
+
+         <span class="c1"># Get the aspects as if you are doing the subset</span>
+        <span class="n">feature_r</span><span class="p">,</span> <span class="n">feature_theta</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">get_polar_coord</span><span class="p">(</span><span class="n">feature_coords</span><span class="p">[</span><span class="s1">&#39;r&#39;</span><span class="p">],</span> <span class="n">feature_coords</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">],</span> <span class="n">pupil_list</span><span class="p">[</span><span class="n">start_frame</span><span class="p">])</span>
+        <span class="n">reference_bounds_sr</span> <span class="o">=</span> <span class="p">(</span><span class="n">feature_theta</span> <span class="o">-</span> <span class="n">WINDOW_THETA</span><span class="p">,</span> <span class="n">feature_theta</span> <span class="o">+</span> <span class="n">WINDOW_THETA</span><span class="p">)</span>
+        <span class="n">comparison_bounds_sr</span> <span class="o">=</span> <span class="p">(</span><span class="n">feature_theta</span> <span class="o">-</span> <span class="n">SEGMENT_THETA</span><span class="p">,</span> <span class="n">feature_theta</span> <span class="o">+</span> <span class="n">SEGMENT_THETA</span><span class="p">)</span>
+        <span class="n">start_sr</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">SEGMENT_THETA</span> <span class="o">-</span> <span class="n">WINDOW_THETA</span><span class="p">)</span><span class="o">/</span><span class="n">upsample_factor</span><span class="p">)</span>
+
+    <span class="c1"># get the reference window from the first frame of the video</span>
+    <span class="c1"># this will be the base for all torsion ie. all rotation is relative to this window</span>
+    <span class="n">ref_pupil</span> <span class="o">=</span> <span class="n">pupil</span><span class="o">.</span><span class="n">Pupil</span><span class="p">(</span><span class="n">video</span><span class="p">[</span><span class="n">reference_frame</span><span class="p">],</span> <span class="n">threshold</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">transform_mode</span> <span class="o">==</span> <span class="s1">&#39;alternate&#39;</span><span class="p">:</span>
+        <span class="n">first_window_sr</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">iris_transform</span><span class="p">(</span><span class="n">video</span><span class="p">[</span><span class="n">reference_frame</span><span class="p">],</span>
+            <span class="n">ref_pupil</span><span class="p">,</span>
+            <span class="n">WINDOW_RADIUS</span><span class="p">,</span>
+            <span class="n">theta_resolution</span><span class="o">=</span><span class="n">upsample_factor</span><span class="p">,</span>
+            <span class="n">theta_window</span><span class="o">=</span><span class="n">reference_bounds_sr</span><span class="p">)</span>
+
+    <span class="n">first_window</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">iris_transform</span><span class="p">(</span><span class="n">video</span><span class="p">[</span><span class="n">reference_frame</span><span class="p">],</span>
+        <span class="n">ref_pupil</span><span class="p">,</span>
+        <span class="n">WINDOW_RADIUS</span><span class="p">,</span>
+        <span class="n">theta_resolution</span> <span class="o">=</span> <span class="n">upsample_factor</span><span class="p">,</span>
+        <span class="n">theta_window</span> <span class="o">=</span> <span class="n">reference_bounds</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">calibration_frame</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">h_dist</span> <span class="o">=</span> <span class="n">ref_pupil</span><span class="o">.</span><span class="n">center_col</span> <span class="o">-</span> <span class="n">pupil_list</span><span class="p">[</span><span class="n">calibration_frame</span><span class="p">]</span><span class="o">.</span><span class="n">center_col</span>
+        <span class="n">v_dist</span> <span class="o">=</span> <span class="n">ref_pupil</span><span class="o">.</span><span class="n">center_row</span> <span class="o">-</span> <span class="n">pupil_list</span><span class="p">[</span><span class="n">calibration_frame</span><span class="p">]</span><span class="o">.</span><span class="n">center_row</span>
+        <span class="n">eyeball_radius</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">h_dist</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">v_dist</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">sin</span><span class="p">(</span><span class="n">calibration_angle</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">eyeball_radius</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">transform_mode</span> <span class="o">==</span> <span class="s1">&#39;full&#39;</span> <span class="ow">or</span> <span class="n">transform_mode</span> <span class="o">==</span> <span class="s1">&#39;alternate&#39;</span><span class="p">:</span>
+        <span class="c1"># extend iris window</span>
+        <span class="n">first_window</span> <span class="o">=</span> <span class="n">eyelid_removal</span><span class="o">.</span><span class="n">iris_extension</span><span class="p">(</span>
+            <span class="n">first_window</span><span class="p">,</span>
+            <span class="n">theta_resolution</span> <span class="o">=</span> <span class="n">upsample_factor</span><span class="p">,</span>
+            <span class="n">lower_theta</span> <span class="o">=</span> <span class="o">-</span><span class="n">pre</span><span class="o">.</span><span class="n">MAX_ANGLE</span><span class="p">,</span>
+            <span class="n">upper_theta</span><span class="o">=</span><span class="n">pre</span><span class="o">.</span><span class="n">MAX_ANGLE</span><span class="p">)</span>
+    <span class="c1"># TODO: If noise replace is selected, cannot select segment removal</span>
+    <span class="k">if</span> <span class="n">noise_replace</span><span class="p">:</span>
+        <span class="c1"># transform (colum,row) into (theta,r) space about pupil centre</span>
+        <span class="c1"># get the boundaries of usable iris in polar</span>
+        <span class="n">upper_iris_r</span><span class="p">,</span> <span class="n">upper_iris_theta</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">get_polar_coord</span><span class="p">(</span><span class="n">upper_iris</span><span class="p">[</span><span class="s1">&#39;r&#39;</span><span class="p">],</span> <span class="n">upper_iris</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">],</span> <span class="n">pupil_list</span><span class="p">[</span><span class="n">start_frame</span><span class="p">])</span>
+        <span class="n">lower_iris_r</span><span class="p">,</span> <span class="n">lower_iris_theta</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">get_polar_coord</span><span class="p">(</span><span class="n">lower_iris</span><span class="p">[</span><span class="s1">&#39;r&#39;</span><span class="p">],</span> <span class="n">lower_iris</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">],</span> <span class="n">pupil_list</span><span class="p">[</span><span class="n">start_frame</span><span class="p">])</span>
+
+        <span class="c1"># mirrors the upper angular boundary across the vertical axis</span>
+        <span class="n">upper_occlusion_theta</span> <span class="o">=</span> <span class="p">(</span><span class="mi">90</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">upper_iris_theta</span> <span class="o">-</span> <span class="mi">90</span><span class="p">),</span> <span class="mi">90</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">upper_iris_theta</span> <span class="o">-</span> <span class="mi">90</span><span class="p">))</span>
+
+        <span class="c1"># mirrors the lower angular boundary across the vertical axis</span>
+        <span class="c1"># deal with the branch cut at 270</span>
+        <span class="k">if</span> <span class="n">lower_iris_theta</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">lower_occlusion_theta</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">90</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">lower_iris_theta</span> <span class="o">+</span> <span class="mi">90</span><span class="p">),</span> <span class="o">-</span><span class="mi">90</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">lower_iris_theta</span> <span class="o">+</span> <span class="mi">90</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lower_occlusion_theta</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">90</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">lower_iris_theta</span> <span class="o">-</span> <span class="mi">270</span><span class="p">),</span> <span class="o">-</span><span class="mi">90</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">lower_iris_theta</span> <span class="o">-</span> <span class="mi">270</span><span class="p">))</span>
+
+        <span class="c1"># replace occluded sections with noise</span>
+        <span class="n">first_window</span> <span class="o">=</span> <span class="n">eyelid_removal</span><span class="o">.</span><span class="n">noise_replace_eyelid</span><span class="p">(</span><span class="n">first_window</span><span class="p">)</span>
+    <span class="n">torsion</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">torsion_derivative</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">transformed_iris</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># find torsion between start_frame+1:last_frame</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="n">video</span><span class="p">[</span><span class="n">start_frame</span><span class="p">:</span><span class="n">end_frame</span><span class="p">])):</span>
+        <span class="n">frame_loc</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="n">start_frame</span>
+        <span class="k">if</span> <span class="n">frame_loc</span> <span class="o">==</span> <span class="n">start_frame</span><span class="p">:</span>
+            <span class="n">deg</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">previous_deg</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">current_frame</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">iris_transform</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span>
+                <span class="n">pupil_list</span><span class="p">[</span><span class="n">frame_loc</span><span class="p">],</span>
+                <span class="n">WINDOW_RADIUS</span><span class="p">,</span>
+                <span class="n">theta_resolution</span><span class="o">=</span><span class="n">upsample_factor</span><span class="p">,</span>
+                <span class="n">theta_window</span><span class="o">=</span><span class="n">comparison_bounds</span><span class="p">,</span>
+                <span class="n">reference_pupil</span><span class="o">=</span><span class="n">ref_pupil</span><span class="p">,</span>
+                <span class="n">eye_radius</span><span class="o">=</span><span class="n">eyeball_radius</span><span class="p">)</span>
+        <span class="c1"># check if a pupil exists , or if there is a blink</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">pupil_list</span><span class="p">[</span><span class="n">frame_loc</span><span class="p">]</span> <span class="ow">or</span> <span class="n">blink_list</span><span class="p">[</span><span class="n">frame_loc</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># if there is no pupil, torsion cannot be calculated</span>
+            <span class="n">deg</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">previous_deg</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">current_frame</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING: No pupil in frame: </span><span class="si">%d</span><span class="s1"> </span><span class="se">\n</span><span class="s1"> Torsion cannot be calculated&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">frame_loc</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">transform_mode</span> <span class="o">==</span> <span class="s1">&#39;alternate&#39;</span> <span class="ow">and</span> <span class="n">blink_list</span><span class="p">[</span><span class="n">frame_loc</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">current_frame</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">iris_transform</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span>
+                    <span class="n">pupil_list</span><span class="p">[</span><span class="n">frame_loc</span><span class="p">],</span>
+                    <span class="n">WINDOW_RADIUS</span><span class="p">,</span>
+                    <span class="n">theta_resolution</span><span class="o">=</span><span class="n">upsample_factor</span><span class="p">,</span>
+                    <span class="n">theta_window</span><span class="o">=</span><span class="n">comparison_bounds_sr</span><span class="p">,</span>
+                    <span class="n">reference_pupil</span><span class="o">=</span><span class="n">ref_pupil</span><span class="p">,</span>
+                    <span class="n">eye_radius</span><span class="o">=</span><span class="n">eyeball_radius</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">current_frame</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">iris_transform</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span>
+                    <span class="n">pupil_list</span><span class="p">[</span><span class="n">frame_loc</span><span class="p">],</span>
+                    <span class="n">WINDOW_RADIUS</span><span class="p">,</span>
+                    <span class="n">theta_resolution</span><span class="o">=</span><span class="n">upsample_factor</span><span class="p">,</span>
+                    <span class="n">theta_window</span><span class="o">=</span><span class="n">comparison_bounds</span><span class="p">,</span>
+                    <span class="n">reference_pupil</span><span class="o">=</span><span class="n">ref_pupil</span><span class="p">,</span>
+                    <span class="n">eye_radius</span><span class="o">=</span><span class="n">eyeball_radius</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">current_frame</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">deg</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">previous_deg</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">noise_replace</span><span class="p">:</span>
+                        <span class="c1"># replace occluded sections with noise</span>
+                        <span class="n">current_frame</span> <span class="o">=</span> <span class="n">eyelid_removal</span><span class="o">.</span><span class="n">noise_replace_eyelid</span><span class="p">(</span><span class="n">current_frame</span><span class="p">)</span>
+                    <span class="c1"># get the degree of rotation of the current frame based on reference frame</span>
+                    <span class="n">deg</span> <span class="o">=</span> <span class="n">xcorr2d</span><span class="o">.</span><span class="n">xcorr2d</span><span class="p">(</span><span class="n">current_frame</span><span class="p">,</span>
+                        <span class="n">first_window</span><span class="p">,</span>
+                        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+                        <span class="n">prev_deg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">torsion_mode</span><span class="o">=</span><span class="n">torsion_mode</span><span class="p">,</span>
+                        <span class="n">resolution</span><span class="o">=</span><span class="n">RESOLUTION</span><span class="p">,</span>
+                        <span class="n">threshold</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                        <span class="n">max_angle</span><span class="o">=</span><span class="n">pre</span><span class="o">.</span><span class="n">MAX_ANGLE</span><span class="p">)</span>
+
+                    <span class="n">previous_window</span> <span class="o">=</span> <span class="n">transformed_iris</span><span class="p">[</span><span class="n">frame_loc</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">previous_window</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">previous_deg</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">transform_mode</span> <span class="o">==</span> <span class="s1">&#39;alternate&#39;</span> <span class="ow">and</span> <span class="n">blink_list</span><span class="p">[</span><span class="n">frame_loc</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+                        <span class="n">previous_window</span> <span class="o">=</span> <span class="n">eyelid_removal</span><span class="o">.</span><span class="n">iris_extension</span><span class="p">(</span><span class="n">previous_window</span><span class="p">,</span>
+                            <span class="n">theta_resolution</span><span class="o">=</span><span class="n">upsample_factor</span><span class="p">,</span>
+                            <span class="n">lower_theta</span><span class="o">=-</span><span class="n">pre</span><span class="o">.</span><span class="n">MAX_ANGLE</span><span class="p">,</span>
+                            <span class="n">upper_theta</span><span class="o">=</span><span class="n">pre</span><span class="o">.</span><span class="n">MAX_ANGLE</span><span class="p">)</span>
+                    <span class="c1"># get the degree of rotation of the current frame based on previous frame</span>
+                    <span class="n">previous_deg</span> <span class="o">=</span> <span class="n">xcorr2d</span><span class="o">.</span><span class="n">xcorr2d</span><span class="p">(</span><span class="n">current_frame</span><span class="p">,</span>
+                        <span class="n">previous_window</span><span class="p">,</span>
+                        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+                        <span class="n">prev_deg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">torsion_mode</span><span class="o">=</span><span class="n">torsion_mode</span><span class="p">,</span>
+                        <span class="n">resolution</span><span class="o">=</span><span class="n">RESOLUTION</span><span class="p">,</span>
+                        <span class="n">threshold</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                        <span class="n">max_angle</span><span class="o">=</span><span class="n">pre</span><span class="o">.</span><span class="n">MAX_ANGLE</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">deg</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">torsion</span><span class="p">[</span><span class="n">frame_loc</span><span class="p">]</span> <span class="o">=</span> <span class="n">deg</span>
+        <span class="n">torsion_derivative</span><span class="p">[</span><span class="n">frame_loc</span><span class="p">]</span> <span class="o">=</span> <span class="n">previous_deg</span>
+        <span class="n">transformed_iris</span><span class="p">[</span><span class="n">frame_loc</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_frame</span>
+    <span class="k">return</span> <span class="n">torsion</span><span class="p">,</span> <span class="n">torsion_derivative</span><span class="p">,</span> <span class="n">transformed_iris</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">Ocular-Torsion-Quantification</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.torsion.html">Torsion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.iris.html">ota.iris package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.pupil.html">ota.pupil package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.video.html">ota.video package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.eyelid.html">ota.eyelid package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.data.html">ota.data package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.gui.html">ota.gui package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.execution.html">ota.execution package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Zara Lim, Esther Lin.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

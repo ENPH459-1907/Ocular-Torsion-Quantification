@@ -1,0 +1,524 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>ota.torsion.xcorr2d &#8212; Ocular-Torsion-Quantification 1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ota.torsion.xcorr2d</h1><div class="highlight"><pre>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Method to calculate the 2D cross correlation between two images.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="n">pi</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span><span class="p">,</span> <span class="n">optimize</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">MAX_ROTATION_ANGLE</span> <span class="o">=</span> <span class="mi">25</span>
+
+<span class="c1"># ================ #</span>
+<span class="c1"># == EXCEPTIONS == #</span>
+<span class="c1"># ================ #</span>
+
+<div class="viewcode-block" id="InputParameterError"><a class="viewcode-back" href="../../../modules/ota.torsion.html#ota.torsion.xcorr2d.InputParameterError">[docs]</a><span class="k">class</span> <span class="nc">InputParameterError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    General error for correlation methods with incorrect parameters.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span></div>
+
+<div class="viewcode-block" id="CorrelationBelowThreshold"><a class="viewcode-back" href="../../../modules/ota.torsion.html#ota.torsion.xcorr2d.CorrelationBelowThreshold">[docs]</a><span class="k">class</span> <span class="nc">CorrelationBelowThreshold</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Correlation must be above a certain threshold.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span></div>
+
+<div class="viewcode-block" id="LackingInterpPoints"><a class="viewcode-back" href="../../../modules/ota.torsion.html#ota.torsion.xcorr2d.LackingInterpPoints">[docs]</a><span class="k">class</span> <span class="nc">LackingInterpPoints</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Need more then 3 points in order to interpolate.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span></div>
+
+<div class="viewcode-block" id="LengthMismatch"><a class="viewcode-back" href="../../../modules/ota.torsion.html#ota.torsion.xcorr2d.LengthMismatch">[docs]</a><span class="k">class</span> <span class="nc">LengthMismatch</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Arrays must be the same length.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span></div>
+
+<div class="viewcode-block" id="xcorr2d"><a class="viewcode-back" href="../../../modules/ota.torsion.html#ota.torsion.xcorr2d.xcorr2d">[docs]</a><span class="k">def</span> <span class="nf">xcorr2d</span><span class="p">(</span>
+    <span class="n">iris_seg</span><span class="p">,</span>
+    <span class="n">reference_window</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">prev_deg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">torsion_mode</span><span class="o">=</span><span class="s1">&#39;interp&#39;</span><span class="p">,</span>
+    <span class="n">resolution</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">threshold</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">max_angle</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+    <span class="n">verborose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+     <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Performs a pseduo 2D cross correlation method to calculate the relative shift</span>
+<span class="sd">    between features in the given iris segment and a reference window. A moving</span>
+<span class="sd">    window is taken from the current iris segment and the 2D correlation coefficient</span>
+<span class="sd">    is calculated between the two matrices. Relative to other image convolution</span>
+<span class="sd">    methods, in this function the window only moves along one axis (columns) but the</span>
+<span class="sd">    correlation coefficient is calculated in two dimensions.</span>
+
+<span class="sd">    There are two different methods of performing the cross correlation: &#39;full&#39; or</span>
+<span class="sd">    &#39;subset&#39;. In both methods, the maximum torsion is limited to +- 25 degrees to</span>
+<span class="sd">    decrease the total number of comparisions required. The &#39;subset&#39; method involves</span>
+<span class="sd">    less comparisions but is less robust then the &#39;full&#39; method as less points are</span>
+<span class="sd">    used to calculate the correlation coefficient.</span>
+
+<span class="sd">    &#39;subset&#39; - A smaller subset of the original segment is considered as the reference</span>
+<span class="sd">        window. A window of the same size is taken from the current iris segement</span>
+<span class="sd">        and the correlation coefficient is then computed.&#39;</span>
+
+<span class="sd">    &#39;full&#39; - The reference window is extended by the maximum torsion angle (25 deg)</span>
+<span class="sd">        and the full iris segment is used as the moving window. The size of the</span>
+<span class="sd">        moving window is equal to the size of the iris segment.</span>
+
+<span class="sd">    There are two modes for quantifying the torsion: &#39;interp&#39; and &#39;upsample&#39;.</span>
+
+<span class="sd">    &#39;interp&#39; - Interpolates the cross correlation coefficient values.</span>
+<span class="sd">        See &#39;corr_interp&#39; for more details.</span>
+
+<span class="sd">    &#39;upsample&#39; - Used when passing an iris segment that has been upsampled.</span>
+<span class="sd">        To accurately calculate the torsion, the resulotion must be equal to the</span>
+<span class="sd">        upsampled resolution or the iris segment.</span>
+
+<span class="sd">    See &#39;corr_upsample&#39;</span>
+<span class="sd">        for more details.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    iris_seg : 2D array_like NxM</span>
+<span class="sd">        Unwrapped iris segment, in polar coordinates.</span>
+
+<span class="sd">    reference_window : 2D array_like NxK</span>
+<span class="sd">        Intial window used as the reference for all rotation.</span>
+
+<span class="sd">        Depending on the size of the reference window relative to the iris_seg,</span>
+<span class="sd">        a different torsion_mode will be used to perform the cross correlation.</span>
+
+<span class="sd">        &#39;subset&#39; - If K &lt; M then a window of size NxK is taken from the iris</span>
+<span class="sd">            segment and compared against the reference window. In total there</span>
+<span class="sd">            is M - K possible windows available from the iris segment.</span>
+
+<span class="sd">        &#39;full&#39; - If K &gt;= M then the window will be the iris segement and the</span>
+<span class="sd">            size of the window will be unmodified. The size of reference</span>
+<span class="sd">            window should be K = M + 2 * max angle of torsion. The iris segement is</span>
+<span class="sd">            then shifted 2 * max angle across the the reference window in order to</span>
+<span class="sd">            perform the cross correlation.</span>
+
+<span class="sd">    start : int, default = 0</span>
+<span class="sd">        Starting index location of the window. Leave start as 0 for &#39;full&#39; method.</span>
+
+<span class="sd">    prev_deg : float</span>
+<span class="sd">        Previous rotation angle. If an error occurs, the method will default</span>
+<span class="sd">        to prev_deg.</span>
+
+<span class="sd">    torsion_mode : optional, str {&#39;interp&#39;, &#39;upsample&#39;}</span>
+<span class="sd">        Select the operation torsion_mode. &#39;interp&#39; will interpolate the Correlation</span>
+<span class="sd">        result. &#39;upsample&#39; assumes the input iris_seg has been upsampled by a</span>
+<span class="sd">        specific resolution.</span>
+
+<span class="sd">    resolution : float, 0 &lt; x &lt; 1, default = 1</span>
+<span class="sd">        &#39;interp&#39; - The resolution will define dx for the interpolated function.</span>
+<span class="sd">        &#39;upsample&#39; - The resolution corresponds to the upsampled resolution.</span>
+
+<span class="sd">    threshold : float, 0 =&lt; x &lt; 1, default = 0</span>
+<span class="sd">        Minimum correlation value of correlation, all correlation values less</span>
+<span class="sd">        then threshold will be ignored.</span>
+
+<span class="sd">    max_angle : float 0 =&lt; x &lt; 360, default = 25</span>
+<span class="sd">        The maximum angle of rotation of the eye. Only values within + and -</span>
+<span class="sd">        max_angle will be considered.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    deg : float (in degrees)</span>
+<span class="sd">        The amount of rotation of the iris relative to the reference window.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">corrs</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># constants</span>
+    <span class="n">WINDOW_SHIFTS</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">WINDOW_LENGTH</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">WINDOW_OFFSET</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># hold the number of shifts here</span>
+    <span class="n">shifts</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># factor to update index locations for upsample methods</span>
+    <span class="n">upsample_factor</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">torsion_mode</span> <span class="o">==</span> <span class="s1">&#39;interp&#39;</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">elif</span> <span class="n">torsion_mode</span> <span class="o">==</span> <span class="s1">&#39;upsample&#39;</span><span class="p">:</span>
+        <span class="n">upsample_factor</span> <span class="o">=</span> <span class="n">resolution</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InputParameterError</span><span class="p">(</span><span class="s2">&quot;Mode </span><span class="si">{}</span><span class="s2"> is not supported. torsion_mode={&#39;interp&#39;, &#39;upsample&#39;}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">torsion_mode</span><span class="p">))</span>
+
+    <span class="n">max_angle</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_angle</span> <span class="o">/</span> <span class="n">upsample_factor</span><span class="p">)</span>
+
+    <span class="c1"># determine the method given the number of columns on the input matrices</span>
+    <span class="c1"># set the window length, shifts and start given the method</span>
+    <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="n">reference_window</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">iris_seg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># FULL METHOD</span>
+    <span class="k">if</span> <span class="n">reference_window</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">iris_seg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;full&#39;</span>
+        <span class="n">WINDOW_LENGTH</span> <span class="o">=</span> <span class="n">iris_seg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">WINDOW_SHIFTS</span> <span class="o">=</span> <span class="n">reference_window</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">iris_seg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># update start to account for the extension of the frame size by max_angle</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">WINDOW_SHIFTS</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># force max_angle to be</span>
+        <span class="k">if</span> <span class="n">max_angle</span> <span class="o">!=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">start</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING: 2 * Max angle (</span><span class="si">{}</span><span class="s1">) does not equal the total amount of extended degres to the reference window (</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">max_angle</span><span class="p">,</span>  <span class="n">WINDOW_SHIFTS</span><span class="p">))</span>
+            <span class="n">max_angle</span> <span class="o">=</span> <span class="n">start</span>
+    <span class="c1"># SUBSET METHOD</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;subset&#39;</span>
+        <span class="c1"># raise an error if start is less then max_angle (this will break array-access later)</span>
+        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="n">max_angle</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InputParameterError</span><span class="p">(</span><span class="s1">&#39;The start index (</span><span class="si">{}</span><span class="s1">) must be greater then the max_angle / upsample resolution (</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1"> = </span><span class="si">{}</span><span class="s1">).&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">max_angle</span> <span class="o">*</span> <span class="n">upsample_factor</span><span class="p">,</span> <span class="n">upsample_factor</span><span class="p">,</span> <span class="n">max_angle</span><span class="p">))</span>
+
+        <span class="n">WINDOW_LENGTH</span> <span class="o">=</span> <span class="n">reference_window</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">WINDOW_SHIFTS</span> <span class="o">=</span> <span class="n">max_angle</span> <span class="o">*</span> <span class="mi">2</span>
+
+        <span class="c1"># to go through every possible shift</span>
+        <span class="c1"># WINDOW_SHIFTS = iris_seg.shape[1] - WINDOW_LENGTH</span>
+
+    <span class="c1"># defaults for upper and lower bound</span>
+    <span class="n">lb</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="o">-</span> <span class="n">max_angle</span>
+    <span class="n">ub</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="o">+</span> <span class="n">max_angle</span>
+    <span class="n">shifts</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">)</span>
+
+    <span class="c1"># override values with kw args</span>
+    <span class="n">WINDOW_LENGTH</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;WINDOW_LENGTH&#39;</span><span class="p">,</span> <span class="n">WINDOW_LENGTH</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;WINDOW_SHIFTS&#39;</span><span class="p">):</span>
+        <span class="n">shifts</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;WINDOW_SHIFTS&#39;</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">shifts</span><span class="p">:</span>
+        <span class="n">corr</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># calculate the correlation coefficient between the current window and</span>
+        <span class="c1"># reference window</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;full&#39;</span><span class="p">:</span>
+            <span class="c1"># take a subset of the extended reference window</span>
+            <span class="n">corr</span> <span class="o">=</span> <span class="n">corr2_coeff</span><span class="p">(</span><span class="n">iris_seg</span><span class="p">,</span> <span class="n">reference_window</span><span class="p">[:,</span> <span class="n">j</span><span class="p">:</span><span class="n">j</span> <span class="o">+</span> <span class="n">WINDOW_LENGTH</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># take a window from the current iris polar segment</span>
+            <span class="n">corr</span> <span class="o">=</span> <span class="n">corr2_coeff</span><span class="p">(</span><span class="n">iris_seg</span><span class="p">[:,</span> <span class="n">j</span><span class="p">:</span><span class="n">j</span> <span class="o">+</span> <span class="n">WINDOW_LENGTH</span><span class="p">],</span> <span class="n">reference_window</span><span class="p">)</span>
+
+        <span class="c1"># save the correlation result</span>
+        <span class="n">corrs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">corr</span><span class="p">)</span>
+
+    <span class="c1"># TODO</span>
+    <span class="c1"># in the result of an error, return prev_deg</span>
+    <span class="n">deg</span> <span class="o">=</span> <span class="n">prev_deg</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">corrs</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">max_angle</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">reduced_corr</span><span class="p">(</span><span class="n">corrs</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">lb</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">reduced_corr</span><span class="p">(</span><span class="n">corrs</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">)</span>
+
+    <span class="c1"># calculate the torsion (in degrees) depending on the method</span>
+    <span class="k">if</span> <span class="n">torsion_mode</span> <span class="o">==</span> <span class="s1">&#39;interp&#39;</span><span class="p">:</span>
+        <span class="n">deg</span> <span class="o">=</span> <span class="n">corr_interp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">torsion_mode</span> <span class="o">==</span> <span class="s1">&#39;upsample&#39;</span><span class="p">:</span>
+        <span class="n">deg</span> <span class="o">=</span> <span class="n">corr_upsample</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;full&#39;</span><span class="p">:</span>
+        <span class="n">deg</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">deg</span>
+
+    <span class="k">return</span> <span class="n">deg</span></div>
+
+<div class="viewcode-block" id="corr_interp"><a class="viewcode-back" href="../../../modules/ota.torsion.html#ota.torsion.xcorr2d.corr_interp">[docs]</a><span class="k">def</span> <span class="nf">corr_interp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">interp_resolution</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;quadratic&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Interpolate a list of correlation values and return the amount of rotation</span>
+<span class="sd">    on a finer grid.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    x : array_like</span>
+<span class="sd">        Indices location of the accepted correlation values relative to the</span>
+<span class="sd">        original location in corrs.</span>
+
+<span class="sd">    y : array_like</span>
+<span class="sd">        Correlation values that are between lb and ub that are above the threshold.</span>
+
+<span class="sd">    start : int</span>
+<span class="sd">        Starting index location of the window.</span>
+
+<span class="sd">    interp_resolution : float</span>
+<span class="sd">        Resultion of the interpolated correlation function.</span>
+
+<span class="sd">    kind : optional, str</span>
+<span class="sd">        Type of piecewise interpolation function. See scipy.interpolate.interp1d</span>
+<span class="sd">        for more details.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    deg : float</span>
+<span class="sd">        The amount of rotation after interpolation.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">LackingInterpPoints</span><span class="p">(</span><span class="s1">&#39;Only have </span><span class="si">{}</span><span class="s1"> points. Need at least 4.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)))</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Unhandled error in the scipy interp1d method.&#39;</span><span class="p">)</span>
+        <span class="k">raise</span>
+
+    <span class="c1"># create a list of fine x values with the step size (resolution)</span>
+    <span class="n">xnew</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">interp_resolution</span><span class="p">)</span>
+
+    <span class="c1"># calculate the list of interpolated y values</span>
+    <span class="n">ynew</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">xnew</span><span class="p">)</span>
+
+    <span class="c1"># determine the location of the interpolated maximum</span>
+    <span class="n">interp_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">ynew</span><span class="p">)</span>
+    <span class="n">interp_argmax</span> <span class="o">=</span> <span class="n">xnew</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">ynew</span><span class="p">)]</span>
+    <span class="n">deg</span> <span class="o">=</span> <span class="n">interp_argmax</span> <span class="o">-</span> <span class="n">start</span>
+
+    <span class="k">return</span> <span class="n">deg</span></div>
+
+<div class="viewcode-block" id="corr_upsample"><a class="viewcode-back" href="../../../modules/ota.torsion.html#ota.torsion.xcorr2d.corr_upsample">[docs]</a><span class="k">def</span> <span class="nf">corr_upsample</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">upsample_resolution</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Determine the maximum correlation using the upsampling method.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    x : array_like</span>
+<span class="sd">        Indices location of the accepted correlation values relative to the</span>
+<span class="sd">        original location in corrs.</span>
+
+<span class="sd">    y : array_like</span>
+<span class="sd">        Correlation values that are between lb and ub that are above the threshold.</span>
+
+<span class="sd">    start : int</span>
+<span class="sd">        Starting index location of the window.</span>
+
+<span class="sd">    upsample_resolution : float</span>
+<span class="sd">        Resultion of the upsampled iris segment.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    deg : float</span>
+<span class="sd">        The amount of rotation using an upsampled image.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># x, y = reduced_corr(corrs, lb, ub, threshold)</span>
+
+    <span class="n">upsample_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">upsample_argmax</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y</span><span class="p">)]</span>
+    <span class="n">deg</span> <span class="o">=</span> <span class="p">(</span><span class="n">upsample_argmax</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">*</span> <span class="n">upsample_resolution</span>
+
+    <span class="k">return</span> <span class="n">deg</span></div>
+
+<div class="viewcode-block" id="reduced_corr"><a class="viewcode-back" href="../../../modules/ota.torsion.html#ota.torsion.xcorr2d.reduced_corr">[docs]</a><span class="k">def</span> <span class="nf">reduced_corr</span><span class="p">(</span><span class="n">corrs</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ub</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Returns a list of correlation values between a lower bound and upper bound</span>
+<span class="sd">    that only includes the values above the threshold. If there is no correlation</span>
+<span class="sd">    found greater then the threshold within the bounds then CorrelationBelowThreshold</span>
+<span class="sd">    exception is raised. If there is not enough points founds for interpolation</span>
+<span class="sd">    then LackingInterpPoints is raised. See scipy.interpolate.interp1d for more</span>
+<span class="sd">    details.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    corrs : float list</span>
+<span class="sd">        List of correlation values.</span>
+
+<span class="sd">    threshold : float, 0 =&lt; x &lt; 1</span>
+<span class="sd">        Minimum correlation value of correlation, all correlation values less</span>
+<span class="sd">        then threshold will be ignored.</span>
+
+<span class="sd">    lb : int, 0 &lt;= x &lt; ub, default = 0</span>
+<span class="sd">        Lower bound.</span>
+
+<span class="sd">    ub : int lb &lt; x &lt; len(corrs), default = len(corrs) - 1</span>
+<span class="sd">        Upper bound.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">    x : array_like</span>
+<span class="sd">        Indices location of the accepted correlation values relative to the</span>
+<span class="sd">        original location in corrs.</span>
+
+<span class="sd">    y : array_like</span>
+<span class="sd">        Correlation values that are between lb and ub that are above the threshold.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># set upper bound</span>
+    <span class="k">if</span> <span class="n">ub</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ub</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">corrs</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="c1"># only consider correlation values within +- 25 deg</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">corrs</span><span class="p">[</span><span class="n">lb</span><span class="p">:</span><span class="n">ub</span><span class="p">])</span>
+    <span class="n">I</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">y</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">I</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1">#print(lb,ub,corrs)</span>
+        <span class="k">raise</span> <span class="n">CorrelationBelowThreshold</span><span class="p">(</span><span class="s1">&#39;All frame correlation below threshold value: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">threshold</span><span class="p">))</span>
+
+    <span class="c1"># index locations of correlation values above threshold</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">lb</span><span class="p">)</span>
+    <span class="c1"># correlation values above threshold</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">I</span><span class="p">]</span>
+    <span class="c1"># account for an offset</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span></div>
+
+<div class="viewcode-block" id="corr2_coeff"><a class="viewcode-back" href="../../../modules/ota.torsion.html#ota.torsion.xcorr2d.corr2_coeff">[docs]</a><span class="k">def</span> <span class="nf">corr2_coeff</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Caclulates the 2D correlation coefficient of two matrices. Raise an exception</span>
+<span class="sd">    if a and b are not the same size.</span>
+
+<span class="sd">    The coefficient is calculated using the following formula:</span>
+<span class="sd">    https://www.mathworks.com/help/images/ref/corr2.html.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">        a : array_like, NxM</span>
+<span class="sd">        b : array_like, NxM</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ------------------------</span>
+<span class="sd">        coeff : float, 0 =&lt; x =&lt; 1</span>
+<span class="sd">            2D correlation coefficient.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">b</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Must be same shape&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Subtract each element by mean</span>
+    <span class="n">a_m</span> <span class="o">=</span> <span class="n">a</span> <span class="o">-</span> <span class="n">a</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">b_m</span> <span class="o">=</span> <span class="n">b</span> <span class="o">-</span> <span class="n">b</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+    <span class="c1"># Sum of squares across rows</span>
+    <span class="n">a_ss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">a_m</span><span class="p">,</span> <span class="n">a_m</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">();</span>
+    <span class="n">b_ss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">b_m</span><span class="p">,</span> <span class="n">b_m</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">();</span>
+
+    <span class="c1"># if each element of a or b is equal then subtracting from the means gives a zero matrix</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">a_ss</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">b_ss</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="c1"># calculate the 2D coefficient</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">a_m</span><span class="p">,</span><span class="n">b_m</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">a_ss</span> <span class="o">*</span> <span class="n">b_ss</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">Ocular-Torsion-Quantification</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.torsion.html">Torsion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.iris.html">ota.iris package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.pupil.html">ota.pupil package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.video.html">ota.video package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.eyelid.html">ota.eyelid package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.data.html">ota.data package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.gui.html">ota.gui package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.execution.html">ota.execution package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Zara Lim, Esther Lin.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

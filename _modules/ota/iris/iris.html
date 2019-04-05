@@ -1,0 +1,313 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>ota.iris.iris &#8212; Ocular-Torsion-Quantification 1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ota.iris.iris</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="k">as</span> <span class="nn">sp</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">ndimage</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">cv2</span> <span class="k">import</span> <span class="n">remap</span><span class="p">,</span> <span class="n">INTER_LINEAR</span>
+
+<span class="c1"># TODO instead of ret_cartesian use mode=&#39;polar&#39; or cartesian</span>
+<span class="c1"># https://github.com/scipy/scipy/blob/v0.19.1/scipy/signal/signaltools.py#L111-L269</span>
+<span class="c1"># https://github.com/uber/pyro/blob/dev/pyro/distributions/distribution.py</span>
+<div class="viewcode-block" id="iris_transform"><a class="viewcode-back" href="../../../modules/ota.iris.html#ota.iris.iris.iris_transform">[docs]</a><span class="k">def</span> <span class="nf">iris_transform</span><span class="p">(</span>
+    <span class="n">frame</span><span class="p">,</span>
+    <span class="n">pupil</span><span class="p">,</span>
+    <span class="n">iris_thickness</span><span class="p">,</span>
+    <span class="n">theta_window</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span> <span class="mi">270</span><span class="p">),</span>
+    <span class="n">theta_resolution</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">r_resolution</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;polar&#39;</span><span class="p">,</span>
+    <span class="n">reference_pupil</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">eye_radius</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Transforms the iris in the given frame into polar representation where the vertical</span>
+<span class="sd">    axis is &#39;r&#39; and horizontal axis is theta.</span>
+
+<span class="sd">    Optionally returns iris segment in cartesian coordinates</span>
+
+<span class="sd">    Inputs:</span>
+<span class="sd">        frame - opencv video frame (numpy array of intensities)</span>
+<span class="sd">        pupil - a dictionary containing information about the pupil within the frame</span>
+<span class="sd">        iris_thickness - pixel width of the iris</span>
+<span class="sd">        theta_window - Range of theta values over which to sample the cartesian image</span>
+<span class="sd">        theta_resolution - sampling interval for theta in degrees. Default is 1 degree.</span>
+<span class="sd">        r_resolution - sampling interval for radius. Default is 1 pixel length</span>
+<span class="sd">        mode - string value  representing whether to return the iris in cartesian or polar coodrinates. By default this is set to polar</span>
+<span class="sd">        reference_pupil - the reference pupil used for geometric correction</span>
+<span class="sd">        eye_radius - the radius of the eyeball in pixels</span>
+
+<span class="sd">    Outputs:</span>
+<span class="sd">        polar_iris - opencv image (numpy array) of extracted iris in polar coordinates</span>
+<span class="sd">        cartesian_iris - opencv image (numpy array) of extracted iris in cartesian coordinates</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="c1"># If no pupil can be found, then just skip everything</span>
+    <span class="k">if</span> <span class="n">pupil</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">INNER_RADIUS_BUFFER</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">min_radius</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">major</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">INNER_RADIUS_BUFFER</span>
+    <span class="n">max_radius</span> <span class="o">=</span> <span class="n">min_radius</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">iris_thickness</span><span class="p">)</span>
+    <span class="n">pupil_row_loc</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">center_row</span><span class="p">)</span>
+    <span class="n">pupil_col_loc</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pupil</span><span class="o">.</span><span class="n">center_col</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;cartesian&#39;</span><span class="p">:</span>
+        <span class="n">iris_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">max_radius</span><span class="p">)</span>
+
+        <span class="n">cartesian_iris</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">iris_size</span><span class="p">,</span><span class="n">iris_size</span><span class="p">))</span>
+        <span class="n">row_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">pupil_row_loc</span><span class="o">-</span><span class="n">max_radius</span><span class="p">,</span><span class="n">pupil_row_loc</span><span class="o">+</span><span class="n">max_radius</span><span class="p">,</span><span class="n">iris_size</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">col_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">pupil_col_loc</span><span class="o">-</span><span class="n">max_radius</span><span class="p">,</span><span class="n">pupil_col_loc</span><span class="o">+</span><span class="n">max_radius</span><span class="p">,</span><span class="n">iris_size</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="c1"># extract pixels that are within a square bounding iris</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iris_size</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iris_size</span><span class="p">):</span>
+                <span class="n">pixel_rad</span><span class="p">,</span> <span class="n">pixel_theta</span> <span class="o">=</span> <span class="n">get_polar_coord</span><span class="p">(</span><span class="n">row_range</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">col_range</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">pupil</span><span class="p">)</span>
+                <span class="c1"># if pixel is outside iris domain do not extract information</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">pixel_rad</span> <span class="o">&gt;</span> <span class="n">min_radius</span> <span class="ow">and</span> <span class="n">pixel_rad</span> <span class="o">&lt;</span> <span class="n">max_radius</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">pixel_theta</span> <span class="o">&gt;=</span> <span class="n">theta_window</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">pixel_theta</span> <span class="o">&lt;=</span> <span class="n">theta_window</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                    <span class="n">cartesian_iris</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">frame</span><span class="p">[</span><span class="n">row_range</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">col_range</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span>
+        <span class="k">return</span> <span class="n">cartesian_iris</span>
+
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;polar&#39;</span><span class="p">:</span>
+        <span class="c1"># determine number of radial and theta increments</span>
+        <span class="n">n_radius</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">max_radius</span> <span class="o">-</span> <span class="n">min_radius</span><span class="p">)</span><span class="o">/</span><span class="n">r_resolution</span><span class="p">)</span>
+        <span class="n">n_theta</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">theta_window</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">theta_window</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="n">theta_resolution</span><span class="p">)</span>
+
+        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="n">min_radius</span><span class="p">:</span><span class="n">max_radius</span><span class="p">:</span><span class="n">n_radius</span> <span class="o">*</span> <span class="mi">1</span><span class="n">j</span><span class="p">,</span> <span class="n">theta_window</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">theta_window</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">n_theta</span> <span class="o">*</span> <span class="mi">1</span><span class="n">j</span><span class="p">]</span>
+        <span class="n">radii</span> <span class="o">=</span> <span class="n">coordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span>
+        <span class="n">angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">coordinates</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+
+        <span class="n">major_minor_ratio</span> <span class="o">=</span> <span class="n">pupil</span><span class="o">.</span><span class="n">minor</span><span class="o">/</span><span class="n">pupil</span><span class="o">.</span><span class="n">major</span>
+
+        <span class="k">if</span> <span class="n">reference_pupil</span> <span class="o">==</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">major_minor_ratio</span> <span class="o">&gt;=</span> <span class="mf">0.9</span><span class="p">:</span>
+            <span class="c1"># If there is no reference pupil or the pupil is circular enough, dont do any correction</span>
+            <span class="c1"># Using scipy&#39;s map_coordinates(), we map the input array into polar</span>
+            <span class="c1"># space centered about the detected pupil center location.</span>
+            <span class="n">polar_iris</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">interpolation</span><span class="o">.</span><span class="n">map_coordinates</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span>
+                                                    <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">radii</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angles</span><span class="p">)</span> <span class="o">+</span> <span class="n">pupil</span><span class="o">.</span><span class="n">center_row</span><span class="p">,</span>
+                                                    <span class="n">radii</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angles</span><span class="p">)</span> <span class="o">+</span> <span class="n">pupil</span><span class="o">.</span><span class="n">center_col</span><span class="p">),</span>
+                                                    <span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">polar_iris</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">h_pupil_movement</span> <span class="o">=</span> <span class="n">pupil</span><span class="o">.</span><span class="n">center_col</span> <span class="o">-</span> <span class="n">reference_pupil</span><span class="o">.</span><span class="n">center_col</span>
+            <span class="n">v_pupil_movement</span> <span class="o">=</span> <span class="n">pupil</span><span class="o">.</span><span class="n">center_row</span> <span class="o">-</span> <span class="n">reference_pupil</span><span class="o">.</span><span class="n">center_row</span>
+
+            <span class="k">if</span> <span class="n">eye_radius</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># If uncalibrated, calculate the radius using the shape of the pupil</span>
+                <span class="n">lateral_angle</span> <span class="o">=</span> <span class="n">get_lateral_angle</span><span class="p">(</span><span class="n">major_minor_ratio</span><span class="p">)</span>
+                <span class="n">r_eye</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">h_pupil_movement</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">v_pupil_movement</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lateral_angle</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">r_eye</span> <span class="o">=</span> <span class="n">eye_radius</span>
+
+            <span class="c1"># The amount the eye has rotated</span>
+            <span class="n">phi0</span> <span class="o">=</span> <span class="n">asin</span><span class="p">(</span><span class="n">h_pupil_movement</span><span class="o">/</span><span class="n">r_eye</span><span class="p">)</span>
+            <span class="n">theta0</span> <span class="o">=</span> <span class="n">asin</span><span class="p">(</span><span class="n">v_pupil_movement</span><span class="o">/</span><span class="n">r_eye</span><span class="p">)</span>
+            <span class="n">map_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_radius</span><span class="p">,</span> <span class="n">n_theta</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+            <span class="n">map_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_radius</span><span class="p">,</span> <span class="n">n_theta</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+            <span class="c1"># TODO: r * cos(a * pi / 180) / r_eye sometimes give a value outside [-1,1], asin is invalid</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">min_radius</span><span class="p">,</span><span class="n">max_radius</span><span class="p">,</span><span class="n">r_resolution</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">theta_window</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">theta_window</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">theta_resolution</span><span class="p">):</span>
+                        <span class="c1"># Each point in the iris in terms of polar angles from the center of the reference pupil</span>
+                        <span class="n">phi</span> <span class="o">=</span> <span class="n">phi0</span> <span class="o">+</span> <span class="n">asin</span><span class="p">(</span><span class="n">r</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span> <span class="o">/</span> <span class="n">r_eye</span><span class="p">)</span>
+                        <span class="n">theta</span> <span class="o">=</span> <span class="n">theta0</span> <span class="o">-</span> <span class="n">asin</span><span class="p">(</span><span class="n">r</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">)</span> <span class="o">/</span> <span class="n">r_eye</span><span class="p">)</span>
+                        <span class="c1"># Calculate pixel location in image</span>
+                        <span class="n">x_loc</span> <span class="o">=</span> <span class="n">reference_pupil</span><span class="o">.</span><span class="n">center_col</span> <span class="o">+</span> <span class="n">r_eye</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
+                        <span class="n">y_loc</span> <span class="o">=</span> <span class="n">reference_pupil</span><span class="o">.</span><span class="n">center_row</span> <span class="o">+</span> <span class="n">r_eye</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+                        <span class="c1"># Map polar coordinates to pixel location in image</span>
+                        <span class="n">map_x</span><span class="p">[((</span><span class="n">r</span> <span class="o">-</span> <span class="n">min_radius</span><span class="p">)</span><span class="o">/</span><span class="n">r_resolution</span><span class="p">,</span> <span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">theta_window</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="n">theta_resolution</span><span class="p">)]</span> <span class="o">=</span> <span class="n">x_loc</span>
+                        <span class="n">map_y</span><span class="p">[((</span><span class="n">r</span> <span class="o">-</span> <span class="n">min_radius</span><span class="p">)</span><span class="o">/</span><span class="n">r_resolution</span><span class="p">,</span> <span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">theta_window</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="n">theta_resolution</span><span class="p">)]</span> <span class="o">=</span> <span class="n">y_loc</span>
+                <span class="n">geometric_corrected_iris</span> <span class="o">=</span> <span class="n">remap</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">map_x</span><span class="p">,</span> <span class="n">map_y</span><span class="p">,</span> <span class="n">INTER_LINEAR</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">geometric_corrected_iris</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Something bad happened in angle calculations&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># TODO throw exception</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Mode not supported&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="get_lateral_angle"><a class="viewcode-back" href="../../../modules/ota.iris.html#ota.iris.iris.get_lateral_angle">[docs]</a><span class="k">def</span> <span class="nf">get_lateral_angle</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="n">ref_ratio</span><span class="o">=</span><span class="mf">0.98</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the angle of lateral motion from the ratio of the major and</span>
+<span class="sd">    minor axes of the pupil using the formula from Atchison-Smith.</span>
+<span class="sd">    Inputs:</span>
+<span class="sd">        ratio - the minor:major ratio</span>
+<span class="sd">    Outputs:</span>
+<span class="sd">        angle - the lateral rotation angle</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="mf">1.8698</span><span class="o">*</span><span class="mi">10</span><span class="o">**-</span><span class="mi">9</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0947</span><span class="o">*</span><span class="mi">10</span><span class="o">**-</span><span class="mi">4</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">ratio</span>
+    <span class="k">return</span> <span class="n">sqrt</span><span class="p">((</span><span class="o">-</span><span class="n">b</span> <span class="o">-</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">b</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">c</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">a</span><span class="p">))</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span></div>
+
+<div class="viewcode-block" id="get_polar_coord"><a class="viewcode-back" href="../../../modules/ota.iris.html#ota.iris.iris.get_polar_coord">[docs]</a><span class="k">def</span> <span class="nf">get_polar_coord</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">pupil</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the polar coordinates of the location specified by cartesian</span>
+<span class="sd">        point (c,r). The origin of the polar coordinate frame is the center</span>
+<span class="sd">        of the pupil.</span>
+<span class="sd">    Inputs:</span>
+<span class="sd">        c - Column index of the feature</span>
+<span class="sd">        r - Row index of the feature</span>
+<span class="sd">        pupil - A dictionary containing information regarding the pupil in the image</span>
+<span class="sd">    Outputs:</span>
+<span class="sd">        radius - The distance of the (c,r) location from the pupil center</span>
+<span class="sd">        theta - The angular coordinate of the (c,r) location in polar space</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">delta_c</span> <span class="o">=</span> <span class="n">c</span> <span class="o">-</span> <span class="n">pupil</span><span class="o">.</span><span class="n">center_col</span>
+    <span class="n">delta_r</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="p">(</span><span class="n">r</span> <span class="o">-</span> <span class="n">pupil</span><span class="o">.</span><span class="n">center_row</span><span class="p">)</span> <span class="c1"># multiply by negative one to account for increasing y correpsonding to decreasing r</span>
+    <span class="n">radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">delta_c</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">delta_r</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">delta_c</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">delta_r</span> <span class="o">/</span> <span class="n">radius</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">180</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">delta_r</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="mi">180</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">delta_r</span> <span class="o">/</span> <span class="n">radius</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">180</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="mi">180</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">delta_r</span> <span class="o">/</span> <span class="n">delta_c</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">180</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">radius</span><span class="p">,</span> <span class="n">theta</span></div>
+
+<div class="viewcode-block" id="get_cartesian_coord"><a class="viewcode-back" href="../../../modules/ota.iris.html#ota.iris.iris.get_cartesian_coord">[docs]</a><span class="k">def</span> <span class="nf">get_cartesian_coord</span><span class="p">(</span><span class="n">radius</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">pupil</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the cartesian coordinates of the location specified by polar</span>
+<span class="sd">        coordinate point (radius, theta). The origin of the polar coordinate frame is the center</span>
+<span class="sd">        of the pupil.</span>
+<span class="sd">    Inputs:</span>
+<span class="sd">        radius - Distance of the location from the pupil center</span>
+<span class="sd">        theta - The angular coordinate of the location in polar space</span>
+<span class="sd">        pupil - A dictionary containing information regarding the pupil in the image</span>
+<span class="sd">    Outputs:</span>
+<span class="sd">        location - dictionatry containing the following:</span>
+<span class="sd">            row - The row index of the location in cartesian image space</span>
+<span class="sd">            col - The column index of the location in cartesian image space</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">col</span> <span class="o">=</span> <span class="n">pupil</span><span class="o">.</span><span class="n">center_col</span> <span class="o">+</span> <span class="n">radius</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">)</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="n">pupil</span><span class="o">.</span><span class="n">center_row</span> <span class="o">-</span> <span class="n">radius</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">)</span>
+
+    <span class="c1"># TODO return a tuple instead</span>
+    <span class="c1"># ex, return c, r</span>
+    <span class="n">location</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;r&#39;</span><span class="p">:</span> <span class="n">row</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="n">col</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">location</span></div>
+
+<div class="viewcode-block" id="calculate_func_of_theta"><a class="viewcode-back" href="../../../modules/ota.iris.html#ota.iris.iris.calculate_func_of_theta">[docs]</a><span class="k">def</span> <span class="nf">calculate_func_of_theta</span><span class="p">(</span><span class="n">polar_image</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Input: polar_image - A transformed (to polar coordinates) and masked image of the iris</span>
+<span class="sd">    Output: f - A function that relates an angle theta to the sum of the intensity as the radius is varied for that fixed theta</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">polar_image</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:])</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">polar_image</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">f</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">Ocular-Torsion-Quantification</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.torsion.html">Torsion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.iris.html">ota.iris package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.pupil.html">ota.pupil package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.video.html">ota.video package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.eyelid.html">ota.eyelid package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.data.html">ota.data package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.gui.html">ota.gui package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.execution.html">ota.execution package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Zara Lim, Esther Lin.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

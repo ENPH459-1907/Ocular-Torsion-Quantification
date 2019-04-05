@@ -1,0 +1,141 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>ota.execution.pupil_locate &#8212; Ocular-Torsion-Quantification 1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ota.execution.pupil_locate</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">ota.video</span> <span class="k">import</span> <span class="n">video</span> <span class="k">as</span> <span class="n">vid</span>
+<span class="kn">from</span> <span class="nn">ota.pupil</span> <span class="k">import</span> <span class="n">pupil</span>
+<span class="kn">from</span> <span class="nn">ota.iris</span> <span class="k">import</span> <span class="n">iris</span>
+<span class="kn">from</span> <span class="nn">ota.data</span> <span class="k">import</span> <span class="n">data</span> <span class="k">as</span> <span class="n">dat</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="k">import</span> <span class="n">tqdm</span>
+
+<div class="viewcode-block" id="construct_pupil_list"><a class="viewcode-back" href="../../../modules/ota.execution.html#ota.execution.pupil_locate.construct_pupil_list">[docs]</a><span class="k">def</span> <span class="nf">construct_pupil_list</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">first_frame</span><span class="p">,</span> <span class="n">last_frame</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Construct a dictionary of pupil objects for a series of video frames.</span>
+
+<span class="sd">    Inputs:</span>
+<span class="sd">        video - video object</span>
+<span class="sd">        first_frame - Integer representing index of first frame to analyze.</span>
+<span class="sd">        last_frame - Integer representing index of last frame to analyze.</span>
+
+<span class="sd">    Outputs:</span>
+<span class="sd">        pupil_list: Dictionary of pupil objects where the key is the frame number and the value is the pupil object.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">pupil_list</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">frame</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="n">video</span><span class="p">[</span><span class="n">first_frame</span><span class="p">:</span><span class="n">last_frame</span><span class="o">+</span><span class="mi">1</span><span class="p">])):</span>
+        <span class="n">frame_loc</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="n">first_frame</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">pupil_i</span> <span class="o">=</span> <span class="n">pupil</span><span class="o">.</span><span class="n">Pupil</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">threshold</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">pupil</span><span class="o">.</span><span class="n">EmptyAreas</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Pupil not found in frame: </span><span class="si">%d</span><span class="s1"> </span><span class="se">\n</span><span class="s1"> None type object used inplace&#39;</span> <span class="o">%</span> <span class="n">frame_loc</span><span class="p">)</span>
+            <span class="n">pupil_list</span><span class="p">[</span><span class="n">frame_loc</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pupil_list</span><span class="p">[</span><span class="n">frame_loc</span><span class="p">]</span> <span class="o">=</span> <span class="n">pupil_i</span>
+
+    <span class="k">return</span> <span class="n">pupil_list</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">Ocular-Torsion-Quantification</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.torsion.html">Torsion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.iris.html">ota.iris package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.pupil.html">ota.pupil package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.video.html">ota.video package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.eyelid.html">ota.eyelid package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.data.html">ota.data package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.gui.html">ota.gui package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.execution.html">ota.execution package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Zara Lim, Esther Lin.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

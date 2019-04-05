@@ -1,19 +1,17 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>ota.gui package &#8212; ota 1.0 documentation</title>
+    <meta charset="utf-8" />
+    <title>ota.gui package &#8212; Ocular-Torsion-Quantification 1.0 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="ota.execution package" href="ota.execution.html" />
@@ -30,6 +28,8 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <div class="section" id="ota-gui-package">
@@ -37,8 +37,37 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="ota-gui-coord-click-module">
-<h2>ota.gui.coord_click module<a class="headerlink" href="#ota-gui-coord-click-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-ota.gui.coord_click">
+<span id="ota-gui-coord-click-module"></span><h2>ota.gui.coord_click module<a class="headerlink" href="#module-ota.gui.coord_click" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="ota.gui.coord_click.click_coordinates">
+<code class="descclassname">ota.gui.coord_click.</code><code class="descname">click_coordinates</code><span class="sig-paren">(</span><em>img</em>, <em>window_title=''</em>, <em>block=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/coord_click.html#click_coordinates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.coord_click.click_coordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the coordinates of the first click on an image.
+Warning: Makes use of a global variable: global_click_coord</p>
+<p>INPUTS
+img - cv2 image (Numpy array of intensities)
+window_title - string that becomes the title of the window, typically displays</p>
+<blockquote>
+<div><p>instructions of what to click on in the window.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>block - Boolean parameter which instructs the function whether or not the image</dt><dd><p>should block code progression. Should be set to True for use outside of 
+GUI development.</p>
+</dd>
+</dl>
+<p>OUTPUTS
+click_coord - dictionary object containing row and column indicies of click</p>
+<blockquote>
+<div><p>coordinates</p>
+<p>click_coord = {‘c’: column index, ‘r’: row index}</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="ota.gui.coord_click.get_click_coordinates">
+<code class="descclassname">ota.gui.coord_click.</code><code class="descname">get_click_coordinates</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/coord_click.html#get_click_coordinates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.coord_click.get_click_coordinates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
 <div class="section" id="module-ota.gui.frame_scroll">
 <span id="ota-gui-frame-scroll-module"></span><h2>ota.gui.frame_scroll module<a class="headerlink" href="#module-ota.gui.frame_scroll" title="Permalink to this headline">¶</a></h2>
@@ -47,14 +76,14 @@
 <em class="property">class </em><code class="descclassname">ota.gui.frame_scroll.</code><code class="descname">EyelidTracker</code><span class="sig-paren">(</span><em>ax</em>, <em>video</em>, <em>eyelid_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/frame_scroll.html#EyelidTracker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.frame_scroll.EyelidTracker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#ota.gui.frame_scroll.FrameTracker" title="ota.gui.frame_scroll.FrameTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">ota.gui.frame_scroll.FrameTracker</span></code></a></p>
 <p>Object that displays a video frame with the located eyelid overlayed. Class used by eyelid_scroll method.</p>
-<dl class="docutils">
-<dt>ax <span class="classifier-delimiter">:</span> <span class="classifier">object containing elements of a figure</span></dt>
-<dd>Used to set window title and axis labels</dd>
-<dt>video <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
-<dd>series of video frames</dd>
-<dt>eyelid <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of pupils where the key is the frame index and the value is the frame with the eyelid removed.
-Does not need to include all video frames.</dd>
+<dl class="simple">
+<dt>ax<span class="classifier">object containing elements of a figure</span></dt><dd><p>Used to set window title and axis labels</p>
+</dd>
+<dt>video<span class="classifier">array_like</span></dt><dd><p>series of video frames</p>
+</dd>
+<dt>eyelid<span class="classifier">dictionary</span></dt><dd><p>dictionary of pupils where the key is the frame index and the value is the frame with the eyelid removed.
+Does not need to include all video frames.</p>
+</dd>
 </dl>
 <dl class="method">
 <dt id="ota.gui.frame_scroll.EyelidTracker.update">
@@ -68,11 +97,11 @@ Does not need to include all video frames.</dd>
 <em class="property">class </em><code class="descclassname">ota.gui.frame_scroll.</code><code class="descname">FrameTracker</code><span class="sig-paren">(</span><em>ax</em>, <em>video</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/frame_scroll.html#FrameTracker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.frame_scroll.FrameTracker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Object that displays a video frame. Class used by frame_scroll method.</p>
-<dl class="docutils">
-<dt>ax <span class="classifier-delimiter">:</span> <span class="classifier">object containing elements of a figure</span></dt>
-<dd>Used to set window title and axis labels</dd>
-<dt>video <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
-<dd>series of video frames</dd>
+<dl class="simple">
+<dt>ax<span class="classifier">object containing elements of a figure</span></dt><dd><p>Used to set window title and axis labels</p>
+</dd>
+<dt>video<span class="classifier">array_like</span></dt><dd><p>series of video frames</p>
+</dd>
 </dl>
 <dl class="method">
 <dt id="ota.gui.frame_scroll.FrameTracker.on_key">
@@ -91,14 +120,14 @@ Does not need to include all video frames.</dd>
 <em class="property">class </em><code class="descclassname">ota.gui.frame_scroll.</code><code class="descname">PolarTransformTracker</code><span class="sig-paren">(</span><em>ax</em>, <em>video</em>, <em>polar_transform_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/frame_scroll.html#PolarTransformTracker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.frame_scroll.PolarTransformTracker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#ota.gui.frame_scroll.FrameTracker" title="ota.gui.frame_scroll.FrameTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">ota.gui.frame_scroll.FrameTracker</span></code></a></p>
 <p>Object that displays a video frame with the located eyelid overlayed. Class used by polar_transform_scroll method.</p>
-<dl class="docutils">
-<dt>ax <span class="classifier-delimiter">:</span> <span class="classifier">object containing elements of a figure</span></dt>
-<dd>Used to set window title and axis labels</dd>
-<dt>video <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
-<dd>series of video frames</dd>
-<dt>eyelid <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of pupils where the key is the frame index and the value is the frame with the eyelid removed.
-Does not need to include all video frames.</dd>
+<dl class="simple">
+<dt>ax<span class="classifier">object containing elements of a figure</span></dt><dd><p>Used to set window title and axis labels</p>
+</dd>
+<dt>video<span class="classifier">array_like</span></dt><dd><p>series of video frames</p>
+</dd>
+<dt>eyelid<span class="classifier">dictionary</span></dt><dd><p>dictionary of pupils where the key is the frame index and the value is the frame with the eyelid removed.
+Does not need to include all video frames.</p>
+</dd>
 </dl>
 <dl class="method">
 <dt id="ota.gui.frame_scroll.PolarTransformTracker.update">
@@ -112,14 +141,14 @@ Does not need to include all video frames.</dd>
 <em class="property">class </em><code class="descclassname">ota.gui.frame_scroll.</code><code class="descname">PupilTracker</code><span class="sig-paren">(</span><em>ax</em>, <em>video</em>, <em>pupil_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/frame_scroll.html#PupilTracker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.frame_scroll.PupilTracker" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#ota.gui.frame_scroll.FrameTracker" title="ota.gui.frame_scroll.FrameTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">ota.gui.frame_scroll.FrameTracker</span></code></a></p>
 <p>Object that displays a video frame with the located pupil overlayed. Class used by pupil_scroll method.</p>
-<dl class="docutils">
-<dt>ax <span class="classifier-delimiter">:</span> <span class="classifier">object containing elements of a figure</span></dt>
-<dd>Used to set window title and axis labels</dd>
-<dt>video <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
-<dd>series of video frames</dd>
-<dt>pupil_list <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of pupils where the key is the frame index and the value is the pupil.
-Does not need to include all video frames.</dd>
+<dl class="simple">
+<dt>ax<span class="classifier">object containing elements of a figure</span></dt><dd><p>Used to set window title and axis labels</p>
+</dd>
+<dt>video<span class="classifier">array_like</span></dt><dd><p>series of video frames</p>
+</dd>
+<dt>pupil_list<span class="classifier">dictionary</span></dt><dd><p>dictionary of pupils where the key is the frame index and the value is the pupil.
+Does not need to include all video frames.</p>
+</dd>
 </dl>
 <dl class="method">
 <dt id="ota.gui.frame_scroll.PupilTracker.update">
@@ -134,17 +163,17 @@ Does not need to include all video frames.</dd>
 <dd><p>Bases: <a class="reference internal" href="#ota.gui.frame_scroll.FrameTracker" title="ota.gui.frame_scroll.FrameTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">ota.gui.frame_scroll.FrameTracker</span></code></a></p>
 <p>Torsion tracking object. Window updates x y axis to visualize torsion. Class used by torsion_scroll method.</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>ax <span class="classifier-delimiter">:</span> <span class="classifier">object containing elements of a figure</span></dt>
-<dd>Used to set window title and axis labels</dd>
-<dt>video <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
-<dd>video to scroll through</dd>
-<dt>pupil_list <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of pupils where the key is the frame index and the value is the pupil.
-Does not need to include all video frames.</dd>
-<dt>offset_first_frame <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of rotation angles. key is the frame index and the value is the rotation.
-Does not need to include all video frames</dd>
+<div><dl class="simple">
+<dt>ax<span class="classifier">object containing elements of a figure</span></dt><dd><p>Used to set window title and axis labels</p>
+</dd>
+<dt>video<span class="classifier">array_like</span></dt><dd><p>video to scroll through</p>
+</dd>
+<dt>pupil_list<span class="classifier">dictionary</span></dt><dd><p>dictionary of pupils where the key is the frame index and the value is the pupil.
+Does not need to include all video frames.</p>
+</dd>
+<dt>offset_first_frame<span class="classifier">dictionary</span></dt><dd><p>dictionary of rotation angles. key is the frame index and the value is the rotation.
+Does not need to include all video frames</p>
+</dd>
 </dl>
 </div></blockquote>
 <dl class="method">
@@ -160,22 +189,22 @@ Does not need to include all video frames</dd>
 <dd><p>Bases: <a class="reference internal" href="#ota.gui.frame_scroll.FrameTracker" title="ota.gui.frame_scroll.FrameTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">ota.gui.frame_scroll.FrameTracker</span></code></a></p>
 <p>Window tracking object. Window updates window location while frames are scrolling. Class used by window_scroll method.</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>ax <span class="classifier-delimiter">:</span> <span class="classifier">object containing elements of a figure</span></dt>
-<dd>Used to set window title and axis labels</dd>
-<dt>video <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
-<dd>video to scroll through</dd>
-<dt>pupil_list <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of pupils where the key is the frame index and the value is the pupil.
-Does not need to include all video frames.</dd>
-<dt>offset_first_frame <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of rotation angles. key is the frame index and the value is the rotation.
-Does not need to include all video frames</dd>
-<dt>theta_window <span class="classifier-delimiter">:</span> <span class="classifier">tuple of angles</span></dt>
-<dd>theta[0] is the lower bound of the window
-theta[1] is the upper bound of the window</dd>
-<dt>WINDOW_RADIUS: integer</dt>
-<dd>Pixel width of the window radius</dd>
+<div><dl class="simple">
+<dt>ax<span class="classifier">object containing elements of a figure</span></dt><dd><p>Used to set window title and axis labels</p>
+</dd>
+<dt>video<span class="classifier">array_like</span></dt><dd><p>video to scroll through</p>
+</dd>
+<dt>pupil_list<span class="classifier">dictionary</span></dt><dd><p>dictionary of pupils where the key is the frame index and the value is the pupil.
+Does not need to include all video frames.</p>
+</dd>
+<dt>offset_first_frame<span class="classifier">dictionary</span></dt><dd><p>dictionary of rotation angles. key is the frame index and the value is the rotation.
+Does not need to include all video frames</p>
+</dd>
+<dt>theta_window<span class="classifier">tuple of angles</span></dt><dd><p>theta[0] is the lower bound of the window
+theta[1] is the upper bound of the window</p>
+</dd>
+<dt>WINDOW_RADIUS: integer</dt><dd><p>Pixel width of the window radius</p>
+</dd>
 </dl>
 </div></blockquote>
 <dl class="method">
@@ -190,12 +219,12 @@ theta[1] is the upper bound of the window</dd>
 <code class="descclassname">ota.gui.frame_scroll.</code><code class="descname">eyelid_scroll</code><span class="sig-paren">(</span><em>video</em>, <em>eyelid_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/frame_scroll.html#eyelid_scroll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.frame_scroll.eyelid_scroll" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overlays eyelid during frame scroll</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>video <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
-<dd>video to scroll through</dd>
-<dt>eyelid_list <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of pupils where the key is the frame index and the value is the pupil.
-Does not need to include all video frames.</dd>
+<div><dl class="simple">
+<dt>video<span class="classifier">array_like</span></dt><dd><p>video to scroll through</p>
+</dd>
+<dt>eyelid_list<span class="classifier">dictionary</span></dt><dd><p>dictionary of pupils where the key is the frame index and the value is the pupil.
+Does not need to include all video frames.</p>
+</dd>
 </dl>
 </div></blockquote>
 </dd></dl>
@@ -205,9 +234,9 @@ Does not need to include all video frames.</dd>
 <code class="descclassname">ota.gui.frame_scroll.</code><code class="descname">frame_scroll</code><span class="sig-paren">(</span><em>video</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/frame_scroll.html#frame_scroll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.frame_scroll.frame_scroll" title="Permalink to this definition">¶</a></dt>
 <dd><p>Allows user to scroll through video frames using the keyboard.</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>video <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
-<dd>video to scroll through</dd>
+<div><dl class="simple">
+<dt>video<span class="classifier">array_like</span></dt><dd><p>video to scroll through</p>
+</dd>
 </dl>
 </div></blockquote>
 </dd></dl>
@@ -222,12 +251,12 @@ Does not need to include all video frames.</dd>
 <code class="descclassname">ota.gui.frame_scroll.</code><code class="descname">pupil_scroll</code><span class="sig-paren">(</span><em>video</em>, <em>pupil_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/frame_scroll.html#pupil_scroll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.frame_scroll.pupil_scroll" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overlays pupil during frame scroll</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>video <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
-<dd>video to scroll through</dd>
-<dt>pupil_list <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of pupils where the key is the frame index and the value is the pupil.
-Does not need to include all video frames.</dd>
+<div><dl class="simple">
+<dt>video<span class="classifier">array_like</span></dt><dd><p>video to scroll through</p>
+</dd>
+<dt>pupil_list<span class="classifier">dictionary</span></dt><dd><p>dictionary of pupils where the key is the frame index and the value is the pupil.
+Does not need to include all video frames.</p>
+</dd>
 </dl>
 </div></blockquote>
 </dd></dl>
@@ -237,15 +266,15 @@ Does not need to include all video frames.</dd>
 <code class="descclassname">ota.gui.frame_scroll.</code><code class="descname">torsion_scroll</code><span class="sig-paren">(</span><em>video</em>, <em>pupil_list</em>, <em>offset_first_frame</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/frame_scroll.html#torsion_scroll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.frame_scroll.torsion_scroll" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tracks torsion using rotating 2D axis during frame scroll.</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>video <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
-<dd>video to scroll through</dd>
-<dt>pupil_list <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of pupils where the key is the frame index and the value is the pupil.
-Does not need to include all video frames.</dd>
-<dt>offset_first_frame <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of rotation angles. key is the frame index and the value is the rotation.
-Does not need to include all video frames</dd>
+<div><dl class="simple">
+<dt>video<span class="classifier">array_like</span></dt><dd><p>video to scroll through</p>
+</dd>
+<dt>pupil_list<span class="classifier">dictionary</span></dt><dd><p>dictionary of pupils where the key is the frame index and the value is the pupil.
+Does not need to include all video frames.</p>
+</dd>
+<dt>offset_first_frame<span class="classifier">dictionary</span></dt><dd><p>dictionary of rotation angles. key is the frame index and the value is the rotation.
+Does not need to include all video frames</p>
+</dd>
 </dl>
 </div></blockquote>
 </dd></dl>
@@ -255,27 +284,267 @@ Does not need to include all video frames</dd>
 <code class="descclassname">ota.gui.frame_scroll.</code><code class="descname">window_scroll</code><span class="sig-paren">(</span><em>video</em>, <em>pupil_list</em>, <em>offset_first_frame</em>, <em>theta_window</em>, <em>WINDOW_RADIUS</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/frame_scroll.html#window_scroll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.frame_scroll.window_scroll" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tracks window location during frame scroll.</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>video <span class="classifier-delimiter">:</span> <span class="classifier">array_like</span></dt>
-<dd>video to scroll through</dd>
-<dt>pupil_list <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of pupils where the key is the frame index and the value is the pupil.
-Does not need to include all video frames.</dd>
-<dt>offset_first_frame <span class="classifier-delimiter">:</span> <span class="classifier">dictionary</span></dt>
-<dd>dictionary of rotation angles. key is the frame index and the value is the rotation.
-Does not need to include all video frames</dd>
-<dt>theta_window <span class="classifier-delimiter">:</span> <span class="classifier">tuple of angles</span></dt>
-<dd>theta[0] is the lower bound of the window
-theta[1] is the upper bound of the window</dd>
-<dt>WINDOW_RADIUS: integer</dt>
-<dd>Pixel width of the window radius</dd>
+<div><dl class="simple">
+<dt>video<span class="classifier">array_like</span></dt><dd><p>video to scroll through</p>
+</dd>
+<dt>pupil_list<span class="classifier">dictionary</span></dt><dd><p>dictionary of pupils where the key is the frame index and the value is the pupil.
+Does not need to include all video frames.</p>
+</dd>
+<dt>offset_first_frame<span class="classifier">dictionary</span></dt><dd><p>dictionary of rotation angles. key is the frame index and the value is the rotation.
+Does not need to include all video frames</p>
+</dd>
+<dt>theta_window<span class="classifier">tuple of angles</span></dt><dd><p>theta[0] is the lower bound of the window
+theta[1] is the upper bound of the window</p>
+</dd>
+<dt>WINDOW_RADIUS: integer</dt><dd><p>Pixel width of the window radius</p>
+</dd>
 </dl>
 </div></blockquote>
 </dd></dl>
 
 </div>
-<div class="section" id="ota-gui-torsion-application-module">
-<h2>ota.gui.torsion_application module<a class="headerlink" href="#ota-gui-torsion-application-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-ota.gui.torsion_application">
+<span id="ota-gui-torsion-application-module"></span><h2>ota.gui.torsion_application module<a class="headerlink" href="#module-ota.gui.torsion_application" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="ota.gui.torsion_application.MeasureTorsion">
+<em class="property">class </em><code class="descclassname">ota.gui.torsion_application.</code><code class="descname">MeasureTorsion</code><span class="sig-paren">(</span><em>parent</em>, <em>controller</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#MeasureTorsion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.MeasureTorsion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tkinter.Frame</span></code></p>
+<p>Measurement page of the torsion application.</p>
+<dl class="simple">
+<dt>Attributes:</dt><dd><dl class="simple">
+<dt>Interpolation:</dt><dd><p>Integer
+A value of 1 indicates interpolation will be used.
+A value of 0 indicates interpolation will not be used.</p>
+</dd>
+<dt>Upsampling:</dt><dd><p>Integer
+A value of 1 indicates upsampling will be used.
+A value of 0 indicates upsampling will not be used.</p>
+</dd>
+<dt>Fulliris:</dt><dd><p>Integer
+A value of 1 indicates that correlation will be performed on the whole iris.
+A value of 0 indicates that correlation will be performed on a subset of the iris.</p>
+</dd>
+<dt>Subset:</dt><dd><p>Integer
+A value of 1 indicates that correlation will be performed on a subset of the iris.
+A value of 0 indicates that correlation will be performed on the whole iris.</p>
+</dd>
+<dt>NoiseReplacement:</dt><dd><p>Integer
+A value of 1 indicates that portions of the iris will be replaced with noise.
+A value of 0 indicates that no replacement on the iris will be performed</p>
+</dd>
+<dt>radial_thickness:</dt><dd><p>Integer
+Radial thickenss of the iris</p>
+</dd>
+<dt>upper_iris_occ:</dt><dd><p>dictionary, {‘c’: column index, ‘r’: row index}
+Holds the [row,column] coordinates of the upper boundary of the iris that is not occluded by eyelids or eyelashes.</p>
+</dd>
+<dt>lower_iris_occ:</dt><dd><p>dictionary, {‘c’: column index, ‘r’: row index}
+Holds the [row,column] coordinates of the lower boundary of the iris that is not occluded by eyelids or eyelashes.</p>
+</dd>
+<dt>resolution:</dt><dd><p>Double
+If upsampling is used, resolution gives the degree of upsampling used during the iris transform.
+If interpolation is used, iris transform is performed using a transform resolution of 1deg/pixel and interpolated at increments given by resolution.</p>
+</dd>
+<dt>calibration_frame:</dt><dd><p>Integer
+(Optional) the to use for calibration</p>
+</dd>
+<dt>calibration_angle:</dt><dd><p>Double
+(Optional) the angle the eye is rotated in the calibration frame</p>
+</dd>
+<dt>feature_coordinates:</dt><dd><p>List of dictionaries, {‘c’: column index, ‘r’: row index}
+Holds the dictionaries of feature coordinates tracked during subset correlation.</p>
+</dd>
+<dt>num_features:</dt><dd><p>Integer
+size of the feature_coordinates list.</p>
+</dd>
+<dt>window_theta:</dt><dd><p>Integer
+Angle bounds above/below the feature that define the portion of the iris that is to be included in the reference iris window. This window should be smaller than the segment.</p>
+</dd>
+<dt>segment_theta:</dt><dd><p>Integer
+Angle bounds above/below the feature that define the portion of the iris that is to be included in each segment, for which the window is to be located in.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="ota.gui.torsion_application.MeasureTorsion.clear_coordinates">
+<code class="descname">clear_coordinates</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#MeasureTorsion.clear_coordinates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.MeasureTorsion.clear_coordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear the list of features if multiple have been clicked on and recorded.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.MeasureTorsion.get_feature_coordinates">
+<code class="descname">get_feature_coordinates</code><span class="sig-paren">(</span><em>controller</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#MeasureTorsion.get_feature_coordinates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.MeasureTorsion.get_feature_coordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opens the starting video frame in a separate window so that the user can click on a prominent feature.
+Requires the user to separately ‘record feature coordinates’</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.MeasureTorsion.record_feature_coordinates">
+<code class="descname">record_feature_coordinates</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#MeasureTorsion.record_feature_coordinates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.MeasureTorsion.record_feature_coordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stores feature coordinates clicked on to be used in the torsion quantification method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.MeasureTorsion.update">
+<code class="descname">update</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#MeasureTorsion.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.MeasureTorsion.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the GUI page to enable/disable buttons and entry fields depending on the state.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication">
+<em class="property">class </em><code class="descclassname">ota.gui.torsion_application.</code><code class="descname">OcularTorsionApplication</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tkinter.Tk</span></code></p>
+<p>Object that allows the user to interface with multiple torsion quantification methods.</p>
+<dl>
+<dt>Attributes:</dt><dd><p>video: video object
+start_frame: integer
+reference_frame: reference frame from which torsion is measured
+end_frame: integer
+save_path: string, local directory location to save results to
+pupil_list: dictionary of pupil objects</p>
+<blockquote>
+<div><p>key: (int) video frame
+value: pupil object</p>
+</div></blockquote>
+<dl class="simple">
+<dt>eyelid_list: dictionary of eyelid objects</dt><dd><p>key: (int) video frame
+value: eyelid object</p>
+</dd>
+</dl>
+<p>torsion: a list that holds iris rotations results
+frame: dictionary that holds the pages of the GUI</p>
+<blockquote>
+<div><p>key: (str) name of the frame
+value: GUI page</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.construct_pupil_list">
+<code class="descname">construct_pupil_list</code><span class="sig-paren">(</span><em>measure_torsion_button</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.construct_pupil_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.construct_pupil_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs a list of pupils.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.identify_blinks">
+<code class="descname">identify_blinks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.identify_blinks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.identify_blinks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identifies the blinks.
+If it is a blink, insert 1. If not blink, insert 0. Else, None.
+Print blink locations</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.identify_eyelids">
+<code class="descname">identify_eyelids</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.identify_eyelids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.identify_eyelids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identifies the eyelids and blinks</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.plot_torsion">
+<code class="descname">plot_torsion</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.plot_torsion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.plot_torsion" title="Permalink to this definition">¶</a></dt>
+<dd><p>plots all series within the torsion list in a plotly window. The legend shows all the legend entry relating to each series.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>measure_state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the 2D correlation algorithm based on GUI state and common values.</p>
+<dl class="simple">
+<dt>Input:</dt><dd><p>measure_state: current state of measurement page of the GUI</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.save_results">
+<code class="descname">save_results</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.save_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.save_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the output of the torsion results to a CSV</p>
+<dl class="simple">
+<dt>Inputs:</dt><dd><p>data - data object storing the torsion results</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.scroll_eyelids">
+<code class="descname">scroll_eyelids</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.scroll_eyelids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.scroll_eyelids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scroll through video frames while overlaying the eyelid.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.scroll_frames">
+<code class="descname">scroll_frames</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.scroll_frames"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.scroll_frames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scroll through video frames.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.scroll_polar_transform">
+<code class="descname">scroll_polar_transform</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.scroll_polar_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.scroll_polar_transform" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.scroll_pupil">
+<code class="descname">scroll_pupil</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.scroll_pupil"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.scroll_pupil" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scroll through video frames while overlaying the pupil.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.set_save_path">
+<code class="descname">set_save_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.set_save_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.set_save_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set desired path to save the torsion results to.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.set_video_path">
+<code class="descname">set_video_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.set_video_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.set_video_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the path of the video.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.show_frame">
+<code class="descname">show_frame</code><span class="sig-paren">(</span><em>cont</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.show_frame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.show_frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display a frame.</p>
+<dl class="simple">
+<dt>Inputs:</dt><dd><p>cont - index of frame to display</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.view_axis_rotation">
+<code class="descname">view_axis_rotation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.view_axis_rotation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.view_axis_rotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scroll through the video while overlaying the pupil and a set of axis that rotate with torsion results.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ota.gui.torsion_application.OcularTorsionApplication.view_window_rotation">
+<code class="descname">view_window_rotation</code><span class="sig-paren">(</span><em>measure_state</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#OcularTorsionApplication.view_window_rotation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.OcularTorsionApplication.view_window_rotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scroll through the video while overlaying the pupil and the window that rotates with the torsion results.</p>
+<dl class="simple">
+<dt>Inputs:</dt><dd><p>theta_window - tuple that stores the minimum and maximum angle above/below the feature
+WINDOW_RADIUS - radial thickness of the window</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="ota.gui.torsion_application.StartPage">
+<em class="property">class </em><code class="descclassname">ota.gui.torsion_application.</code><code class="descname">StartPage</code><span class="sig-paren">(</span><em>parent</em>, <em>controller</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#StartPage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.StartPage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tkinter.Frame</span></code></p>
+<p>Main menu of the torsion application. Allows users to set the video path, set the save path, preview the video and select a torsion quantification
+method.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ota.gui.torsion_application.run">
+<code class="descclassname">ota.gui.torsion_application.</code><code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ota/gui/torsion_application.html#run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ota.gui.torsion_application.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
 <div class="section" id="module-ota.gui">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-ota.gui" title="Permalink to this headline">¶</a></h2>
@@ -284,21 +553,41 @@ theta[1] is the upper bound of the window</dd>
 
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="../index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">ota.gui package</a><ul>
-<li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#ota-gui-coord-click-module">ota.gui.coord_click module</a></li>
-<li><a class="reference internal" href="#module-ota.gui.frame_scroll">ota.gui.frame_scroll module</a></li>
-<li><a class="reference internal" href="#ota-gui-torsion-application-module">ota.gui.torsion_application module</a></li>
-<li><a class="reference internal" href="#module-ota.gui">Module contents</a></li>
+<h1 class="logo"><a href="../index.html">Ocular-Torsion-Quantification</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.torsion.html">Torsion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.iris.html">ota.iris package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.pupil.html">ota.pupil package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.video.html">ota.video package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.eyelid.html">ota.eyelid package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ota.data.html">ota.data package</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ota.gui package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-ota.gui.coord_click">ota.gui.coord_click module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-ota.gui.frame_scroll">ota.gui.frame_scroll module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-ota.gui.torsion_application">ota.gui.torsion_application module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-ota.gui">Module contents</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="ota.execution.html">ota.execution package</a></li>
 </ul>
+
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
@@ -308,35 +597,34 @@ theta[1] is the upper bound of the window</dd>
   </ul></li>
 </ul>
 </div>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/modules/ota.gui.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
         </div>
       </div>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2018, Bryden Fogelman, Cyrus Neary, Sam Reid.
+      &copy;2019, Zara Lim, Esther Lin.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="../_sources/modules/ota.gui.rst.txt"

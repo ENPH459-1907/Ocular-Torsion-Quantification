@@ -1,0 +1,289 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>ota.pupil.pupil &#8212; Ocular-Torsion-Quantification 1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ota.pupil.pupil</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">cv2</span><span class="o">,</span> <span class="nn">pdb</span><span class="o">,</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">from</span> <span class="nn">ota.eyelid.eyelid</span> <span class="k">import</span> <span class="n">pupil_obstruct</span>
+
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="k">as</span> <span class="nn">sp</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">ndimage</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">ota.eyelid.eyelid</span> <span class="k">import</span> <span class="n">pupil_obstruct</span>
+
+<div class="viewcode-block" id="EmptyAreas"><a class="viewcode-back" href="../../../modules/ota.pupil.html#ota.pupil.pupil.EmptyAreas">[docs]</a><span class="k">class</span> <span class="nc">EmptyAreas</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="ne">Exception</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s1">&#39;No distinct pupil area detected following thresholding, frame may be overexposed or eye might be closed.&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Pupil"><a class="viewcode-back" href="../../../modules/ota.pupil.html#ota.pupil.pupil.Pupil">[docs]</a><span class="k">class</span> <span class="nc">Pupil</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Object to represent a pupil within a specific frame of the video.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">skip_init</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize pupil object and find it&#39;s center, and radius within frame</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ------------------------</span>
+<span class="sd">        frame : array_like</span>
+<span class="sd">            Grayscale video frame containing pupil to be detected</span>
+<span class="sd">        threshold: Uint8</span>
+<span class="sd">            Integer representing the value to use for image binary thresholding.</span>
+
+<span class="sd">        Attributes</span>
+<span class="sd">        ------------------------</span>
+<span class="sd">        center : Dictionary</span>
+<span class="sd">            A dictionary object containing the column and row indexes of the pupil center within the frame</span>
+<span class="sd">            &#39;c&#39; : Center column index</span>
+<span class="sd">            &#39;r&#39; : Center row index</span>
+<span class="sd">        radius : float</span>
+<span class="sd">            Value representing the radius of the pupil in frame (distance measured in pixels)</span>
+<span class="sd">        major : float</span>
+<span class="sd">            Value representing the major axis of the pupil in frame (distance measured in pixels)</span>
+<span class="sd">        minor : float</span>
+<span class="sd">            Value representing the minor axis of the pupil in frame (distance measured in pixels)</span>
+<span class="sd">        pupil_cnt : array_like</span>
+<span class="sd">            Vector type object containing a list of points contained in the contour of the pupil.</span>
+<span class="sd">                0-index of point corresponds to column index</span>
+<span class="sd">                1-index of point corresponds to row index</span>
+<span class="sd">        angle : float</span>
+<span class="sd">            Value representing the tile angle of the pupil in degrees</span>
+<span class="sd">        blink : boolean</span>
+<span class="sd">            True : frame records a blink</span>
+<span class="sd">            False : frame does not record a blink</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">skip_init</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">center_col</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">center_row</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">major</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">minor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">contour</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_pupil_properties_fit_ellipse</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">center_col</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">center_row</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">contour</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="Pupil.calc_pupil_properties_fit_ellipse"><a class="viewcode-back" href="../../../modules/ota.pupil.html#ota.pupil.pupil.Pupil.calc_pupil_properties_fit_ellipse">[docs]</a>    <span class="k">def</span> <span class="nf">calc_pupil_properties_fit_ellipse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find the location of the pupil center and the radius of the pupil within frame using a best fit ellipse.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------------------</span>
+<span class="sd">        frame : array_like</span>
+<span class="sd">            Grayscale video frame containing pupil to be detected</span>
+<span class="sd">        threshold: Uint8</span>
+<span class="sd">            Integer representing the value to use for image binary thresholding.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -----------------------</span>
+<span class="sd">        center : Dictionary</span>
+<span class="sd">            A dictionary object containing the column and row indexes of the pupil center within the frame</span>
+<span class="sd">            &#39;c&#39; : Center column index</span>
+<span class="sd">            &#39;r&#39; : Center row index</span>
+<span class="sd">        radius : float</span>
+<span class="sd">            Value representing the radius of the pupil in frame (distance measured in pixels)</span>
+<span class="sd">        major : float</span>
+<span class="sd">            Value representing the major axis length</span>
+<span class="sd">        minor : float</span>
+<span class="sd">            Value representing the minor axis length</span>
+<span class="sd">        pupil_cnt : array_like</span>
+<span class="sd">            Vector type object containing a list of points contained in the contour of the pupil.</span>
+<span class="sd">                0-index of point corresponds to column index</span>
+<span class="sd">                1-index of point corresponds to row index</span>
+<span class="sd">        angle : float</span>
+<span class="sd">            Value representing the tilt of the pupil</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Threshold the image</span>
+        <span class="n">ret</span><span class="p">,</span> <span class="n">I</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">threshold</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY_INV</span><span class="p">)</span>
+
+        <span class="c1"># Get a list of contours within the image</span>
+        <span class="n">img</span><span class="p">,</span> <span class="n">contours</span><span class="p">,</span> <span class="n">heighrarchy</span> <span class="o">=</span>  <span class="n">cv2</span><span class="o">.</span><span class="n">findContours</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">RETR_EXTERNAL</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">CHAIN_APPROX_NONE</span><span class="p">)</span>
+
+        <span class="c1"># Get the index corresponding to the contour with the maximum enclosed area</span>
+        <span class="n">areas</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">contours</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">areas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">contourArea</span><span class="p">(</span><span class="n">contours</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">contours</span><span class="p">)):</span>
+                <span class="n">areas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">contourArea</span><span class="p">(</span><span class="n">contours</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">areas</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">EmptyAreas</span>
+
+        <span class="n">max_area_ind</span> <span class="o">=</span> <span class="n">areas</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">areas</span><span class="p">))</span>
+
+        <span class="c1"># Get the list of contour points that enclose the max area</span>
+        <span class="n">pupil_cnt</span> <span class="o">=</span> <span class="n">contours</span><span class="p">[</span><span class="n">max_area_ind</span><span class="p">]</span>
+
+        <span class="c1"># Fit an ellipse to the pupil contour in a least squares sense</span>
+        <span class="n">ellipse</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">fitEllipse</span><span class="p">(</span><span class="n">pupil_cnt</span><span class="p">)</span>
+
+        <span class="c1"># Obtain the relevant pupil information from the best fit ellipse</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="n">ellipse</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">ellipse</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">minor_axis_length</span> <span class="o">=</span> <span class="n">ellipse</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">major_axis_length</span> <span class="o">=</span> <span class="n">ellipse</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">angle</span> <span class="o">=</span> <span class="n">ellipse</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="c1"># Obtain a rough estimate of the radius by averaging the major and minor axis lengths</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="p">(</span><span class="n">major_axis_length</span> <span class="o">+</span> <span class="n">minor_axis_length</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span>
+
+        <span class="k">return</span> <span class="n">col</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">major_axis_length</span><span class="p">,</span> <span class="n">minor_axis_length</span><span class="p">,</span> <span class="n">pupil_cnt</span><span class="p">,</span> <span class="n">angle</span></div>
+
+
+<div class="viewcode-block" id="Pupil.calc_pupil_properties_min_enclosing_circle"><a class="viewcode-back" href="../../../modules/ota.pupil.html#ota.pupil.pupil.Pupil.calc_pupil_properties_min_enclosing_circle">[docs]</a>    <span class="k">def</span> <span class="nf">calc_pupil_properties_min_enclosing_circle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find the location of the pupil center and the radius of the pupil within frame using min enclosing circle.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------------------</span>
+<span class="sd">        frame : array_like</span>
+<span class="sd">            Grayscale video frame containing pupil to be detected</span>
+<span class="sd">        threshold: Uint8</span>
+<span class="sd">            Integer representing the value to use for image binary thresholding.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -----------------------</span>
+<span class="sd">        center : Dictionary</span>
+<span class="sd">            A dictionary object containing the column and row indexes of the pupil center within the frame</span>
+<span class="sd">            &#39;c&#39; : Center column index</span>
+<span class="sd">            &#39;r&#39; : Center row index</span>
+<span class="sd">        radius : float</span>
+<span class="sd">            Value representing the radius of the pupil in frame (distance measured in pixels)</span>
+<span class="sd">        pupil_cnt : array_like</span>
+<span class="sd">            Vector type object containing a list of points contained in the contour of the pupil.</span>
+<span class="sd">                0-index of point corresponds to column index</span>
+<span class="sd">                1-index of point corresponds to row index</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Threshold the image</span>
+        <span class="n">ret</span><span class="p">,</span> <span class="n">I</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">threshold</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY_INV</span><span class="p">)</span>
+
+        <span class="c1"># Get a list of contours within the image</span>
+        <span class="n">img</span><span class="p">,</span> <span class="n">contours</span><span class="p">,</span> <span class="n">heighrarchy</span> <span class="o">=</span>  <span class="n">cv2</span><span class="o">.</span><span class="n">findContours</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">RETR_EXTERNAL</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">CHAIN_APPROX_NONE</span><span class="p">)</span>
+
+        <span class="c1"># Get the index corresponding to the contour with the maximum enclosed area</span>
+        <span class="n">areas</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">contours</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">areas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">contourArea</span><span class="p">(</span><span class="n">contours</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">contours</span><span class="p">)):</span>
+                <span class="n">areas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">contourArea</span><span class="p">(</span><span class="n">contours</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">areas</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">EmptyAreas</span>
+
+        <span class="n">max_area_ind</span> <span class="o">=</span> <span class="n">areas</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">areas</span><span class="p">))</span>
+
+        <span class="c1"># Get the list of contour points that enclose the max area</span>
+        <span class="n">pupil_cnt</span> <span class="o">=</span> <span class="n">contours</span><span class="p">[</span><span class="n">max_area_ind</span><span class="p">]</span>
+
+        <span class="c1"># Fit a circle to the contour and find the center and radius</span>
+        <span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">row</span><span class="p">),</span> <span class="n">radius</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">minEnclosingCircle</span><span class="p">(</span><span class="n">pupil_cnt</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">col</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">pupil_cnt</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">Ocular-Torsion-Quantification</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.torsion.html">Torsion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.iris.html">ota.iris package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.pupil.html">ota.pupil package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.video.html">ota.video package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.eyelid.html">ota.eyelid package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.data.html">ota.data package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.gui.html">ota.gui package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules/ota.execution.html">ota.execution package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Zara Lim, Esther Lin.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

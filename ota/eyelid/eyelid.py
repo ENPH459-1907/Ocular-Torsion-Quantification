@@ -42,7 +42,7 @@ def detect_eyelid(image, pupil, **kw):
     max_theta = kw.get('max_theta', 110 * np.pi/180) # Maximum angle for hough line search
     POLY_DEG = kw.get('POLY_DEG', 2) # Degree of polynomial to fit to eyelid points
     UPPER_LID_POLY_TRANS = kw.get('UPPER_LID_POLY_TRANS', 40) # Amount by which to translate upper lid down to more conservatively ensure coverage of entire lid
-    LOWER_LID_POLY_TRANS = kw.get('LOWER_LID_POLY_TRANS', 0) # Amount by which to translate lower lid up to more conservatively ensure coverage of entire lid
+    LOWER_LID_POLY_TRANS = kw.get('LOWER_LID_POLY_TRANS', 20) # Amount by which to translate lower lid up to more conservatively ensure coverage of entire lid
 
     # Defined the image indices representing four regions of interest about the eye
     l_cols = (int(pupil.center_col - (pupil.radius + ROI_STRIP_WIDTH)), int(pupil.center_col - (pupil.radius + ROI_BUFFER)) )

@@ -48,9 +48,11 @@ def noise_replace_eyelid(iris):
                portions replaced with noise.
     '''
     # find mean iris intensity and use it to construct noise with same mean.
-    normalized_magnitude = (np.sum(iris)/iris.size)
+    iris = np.array(iris)
+    nonzero = np.nonzero(iris)
+    normalized_magnitude = (np.sum(iris[nonzero])/iris[nonzero].size)
 
-    loc = (iris == 0)
+    loc = (iris <= normalized_magnitude/20) # if value is less than 5% of mean, remove to remove edge effects
     iris[loc] = normalized_magnitude
     return iris
 

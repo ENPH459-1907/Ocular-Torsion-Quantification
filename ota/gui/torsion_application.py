@@ -30,6 +30,7 @@ from ota.data import data as dat
 from ota.iris import iris, eyelid_removal
 
 from tqdm import tqdm
+import cv2 as cv2
 
 
 LARGE_FONT= ("Verdana", 18)
@@ -133,12 +134,10 @@ class OcularTorsionApplication(tk.Tk):
         # Determine if the user wants to run 2D correlation on the whole iris
         if measure_state.Fulliris.get():
             # Set the transform mode and quantify torsion
-            # TODO: Pass the blinks list in here
             transform_mode = 'full'
             window_theta = None
             segment_theta = None
 
-            # TODO: pass the segment removal
             torsion, torsion_derivative, self.polar_transform_list = tq2dx.quantify_torsion(RADIUS,
                 RESOLUTION,
                 torsion_mode,
@@ -148,6 +147,7 @@ class OcularTorsionApplication(tk.Tk):
                 self.reference_frame.get(),
                 self.end_frame.get(),
                 self.pupil_list,
+                self.eyelid_list,
                 self.blink_list,
                 self.pupil_threshold.get(),
                 upper_iris = upper_iris,
@@ -155,7 +155,8 @@ class OcularTorsionApplication(tk.Tk):
                 WINDOW_THETA = window_theta,
                 SEGMENT_THETA = segment_theta,
                 calibration_frame = (measure_state.calibration_frame.get() if measure_state.Calibrate.get() else None),
-                calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None))
+                calibration_angle = (measure_state.calibration_angle.get() if measure_state.Calibrate.get() else None),
+                noise_replace = measure_state.NoiseReplacement.get())
 
             # Construct metadata
             metadata = 'Mode: %(torsion_mode)s, Iris: %(transform_mode)s, %(replace_status)s, Radial Thickness (pix): %(radial_thickness)d, Video Path: %(video_path)s, Video FPS: %(video_fps)s' % \
@@ -193,7 +194,7 @@ class OcularTorsionApplication(tk.Tk):
                 self.video, self.start_frame.get(),
                 self.reference_frame.get(),
                 self.end_frame.get(),
-                self.pupil_list, self.blink_list,
+                self.pupil_list, self.eyelid_list, self.blink_list,
                 self.pupil_threshold.get(),
                 upper_iris=upper_iris,
                 lower_iris=lower_iris,
@@ -240,7 +241,7 @@ class OcularTorsionApplication(tk.Tk):
                     self.start_frame.get(),
                     self.reference_frame.get(),
                     self.end_frame.get(),
-                    self.pupil_list,
+                    self.pupil_list, self.eyelid_list,
                     self.blink_list,
                     self.pupil_threshold.get(),
                     WINDOW_THETA = measure_state.window_theta.get(),
@@ -416,9 +417,16 @@ class OcularTorsionApplication(tk.Tk):
                     try:
                         self.eyelid_list[frame_loc] = eyelid.detect_eyelid(frame, self.pupil_list[frame_loc])
                         self.blink_list[frame_loc] = eyelid.pupil_obstruct(self.eyelid_list[frame_loc], self.pupil_list[frame_loc].contour)
+
                     except:
                         self.eyelid_list[frame_loc] = None
                         self.blink_list[frame_loc] = None
+                if i > 2 and self.blink_list[frame_loc] == 1 or self.blink_list[frame_loc] is None:
+                    self.blink_list[frame_loc - 1] = None
+                    if self.blink_list[frame_loc - 2] == 1 or self.blink_list[frame_loc - 2] is None:
+                        self.blink_list[frame_loc - 1] = None
+
+
 
 
     def identify_blinks(self):

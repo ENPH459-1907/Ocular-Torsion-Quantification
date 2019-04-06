@@ -7,6 +7,7 @@ from ota.iris import iris, eyelid_removal
 from ota import presets as pre
 from tqdm import tqdm
 from math import *
+import cv2
 
 def quantify_torsion(
     WINDOW_RADIUS,
@@ -18,6 +19,7 @@ def quantify_torsion(
     reference_frame,
     end_frame,
     pupil_list,
+    eyelid_list,
     blink_list,
     threshold,
     WINDOW_THETA = None,
@@ -26,7 +28,8 @@ def quantify_torsion(
     lower_iris = None,
     feature_coords = None,
     calibration_frame = None,
-    calibration_angle = None,):
+    calibration_angle = None,
+    noise_replace = 0):
 
     '''
     Utilizes the 2D cross correlation algorithm xcorr2d to measure and return torsion using the settings given.
@@ -72,6 +75,11 @@ def quantify_torsion(
             dictionary of pupil objects
             key: (int) video frame
             value: pupil object
+
+        eyelid_list:
+            dictionary of eyelid masks
+            key: (int) video frame
+            value: eyelid masks arrays
 
         blink_list:
             dictionary of whether or not a frame captures a blink
@@ -130,7 +138,10 @@ def quantify_torsion(
     '''
 
     upsample_factor = 1
-    noise_replace = False
+    if noise_replace == 1:
+        noise_replace = True
+    if noise_replace == 0:
+        noise_replace = False
 
     if torsion_mode == 'interp':
         pass
@@ -185,32 +196,32 @@ def quantify_torsion(
     else:
         eyeball_radius = None
 
-    if transform_mode == 'full' or transform_mode == 'alternate':
+    if noise_replace:
+        # replace occluded sections with noise
+        first_window = iris.iris_transform(mask_img(eyelid_list[reference_frame], video[reference_frame]),
+                                           ref_pupil,
+                                           WINDOW_RADIUS,
+                                           theta_resolution=upsample_factor,
+                                           theta_window=reference_bounds)
+        first_window = eyelid_removal.noise_replace_eyelid(first_window)
+        # Find mean iris intensity
+        normalized_magnitude = calculate_iris_mean(first_window)
+        # replace occluded sections with noise
+        first_window = iris.iris_transform(mask_img(eyelid_list[reference_frame], video[reference_frame], normalized_magnitude=normalized_magnitude),
+                                           ref_pupil,
+                                           WINDOW_RADIUS,
+                                           theta_resolution=upsample_factor,
+                                           theta_window=reference_bounds)
+        first_window = eyelid_removal.noise_replace_eyelid(first_window)
+
+    if transform_mode == 'full' or transform_mode == 'alternate' or noise_replace:
         # extend iris window
         first_window = eyelid_removal.iris_extension(
             first_window,
             theta_resolution = upsample_factor,
             lower_theta = -pre.MAX_ANGLE,
             upper_theta=pre.MAX_ANGLE)
-    # TODO: If noise replace is selected, cannot select segment removal
-    if noise_replace:
-        # transform (colum,row) into (theta,r) space about pupil centre
-        # get the boundaries of usable iris in polar
-        upper_iris_r, upper_iris_theta = iris.get_polar_coord(upper_iris['r'], upper_iris['c'], pupil_list[start_frame])
-        lower_iris_r, lower_iris_theta = iris.get_polar_coord(lower_iris['r'], lower_iris['c'], pupil_list[start_frame])
 
-        # mirrors the upper angular boundary across the vertical axis
-        upper_occlusion_theta = (90 - np.absolute(upper_iris_theta - 90), 90 + np.absolute(upper_iris_theta - 90))
-
-        # mirrors the lower angular boundary across the vertical axis
-        # deal with the branch cut at 270
-        if lower_iris_theta < 0:
-            lower_occlusion_theta = (-90 - np.absolute(lower_iris_theta + 90), -90 + np.absolute(lower_iris_theta + 90))
-        else:
-            lower_occlusion_theta = (-90 - np.absolute(lower_iris_theta - 270), -90 + np.absolute(lower_iris_theta - 270))
-
-        # replace occluded sections with noise
-        first_window = eyelid_removal.noise_replace_eyelid(first_window)
     torsion = {}
     torsion_derivative = {}
     transformed_iris = {}
@@ -220,6 +231,8 @@ def quantify_torsion(
         if frame_loc == start_frame:
             deg = 0
             previous_deg = None
+            current_frame = first_window # This is true right?
+            '''
             current_frame = iris.iris_transform(frame,
                 pupil_list[frame_loc],
                 WINDOW_RADIUS,
@@ -227,6 +240,7 @@ def quantify_torsion(
                 theta_window=comparison_bounds,
                 reference_pupil=ref_pupil,
                 eye_radius=eyeball_radius)
+            '''
         # check if a pupil exists , or if there is a blink
         elif not pupil_list[frame_loc] or blink_list[frame_loc] is None:
             # if there is no pupil, torsion cannot be calculated
@@ -235,7 +249,7 @@ def quantify_torsion(
             current_frame = None
             print('WARNING: No pupil in frame: %d \n Torsion cannot be calculated' % (frame_loc))
         else:
-            if transform_mode == 'alternate' and blink_list[frame_loc] == 1:
+            if transform_mode == 'alternate' and blink_list[frame_loc] == 1 or blink_list[frame_loc] == None:
                 current_frame = iris.iris_transform(frame,
                     pupil_list[frame_loc],
                     WINDOW_RADIUS,
@@ -243,6 +257,18 @@ def quantify_torsion(
                     theta_window=comparison_bounds_sr,
                     reference_pupil=ref_pupil,
                     eye_radius=eyeball_radius)
+            elif noise_replace:
+                current_frame = iris.iris_transform(mask_img(eyelid_list[frame_loc], frame, normalized_magnitude=normalized_magnitude),
+                    pupil_list[frame_loc],
+                    WINDOW_RADIUS,
+                    theta_resolution=upsample_factor,
+                    theta_window=comparison_bounds,
+                    reference_pupil=ref_pupil,
+                    eye_radius=eyeball_radius)
+                try:
+                    current_frame = eyelid_removal.noise_replace_eyelid(current_frame)
+                except:
+                    current_frame = None
             else:
                 current_frame = iris.iris_transform(frame,
                     pupil_list[frame_loc],
@@ -257,10 +283,14 @@ def quantify_torsion(
                     deg = None
                     previous_deg = None
                 else:
+
+                    '''
                     if noise_replace:
+                        print('hi')
                         # replace occluded sections with noise
                         current_frame = eyelid_removal.noise_replace_eyelid(current_frame)
-                    # get the degree of rotation of the current frame based on reference frame
+                    # get the degree of rotation of the current frame based on reference fram
+                    '''
                     deg = xcorr2d.xcorr2d(current_frame,
                         first_window,
                         start=start,
@@ -274,7 +304,7 @@ def quantify_torsion(
                     if previous_window is None:
                         previous_deg = None
                         continue
-                    if not (transform_mode == 'alternate' and blink_list[frame_loc] == 1):
+                    if not (transform_mode == 'alternate' and blink_list[frame_loc] == 1 or blink_list[frame_loc] == None):
                         previous_window = eyelid_removal.iris_extension(previous_window,
                             theta_resolution=upsample_factor,
                             lower_theta=-pre.MAX_ANGLE,
@@ -294,3 +324,21 @@ def quantify_torsion(
         torsion_derivative[frame_loc] = previous_deg
         transformed_iris[frame_loc] = current_frame
     return torsion, torsion_derivative, transformed_iris
+
+def mask_img(mask, frame, normalized_magnitude=None):
+    '''
+    Bitwise masking of a frame with a given mask
+    '''
+    maskedImg = cv2.bitwise_and(frame, mask)
+    if normalized_magnitude:
+        maskedImg[maskedImg == 0] = normalized_magnitude
+    return maskedImg
+
+def calculate_iris_mean(transformed_masked_img):
+    '''
+    Calculates the mean intesity of the iris for all frames
+    '''
+    iris = np.array(transformed_masked_img)
+    nonzero = np.nonzero(iris)
+    normalized_magnitude = (np.sum(iris[nonzero])/iris[nonzero].size)
+    return normalized_magnitude
